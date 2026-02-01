@@ -1,4 +1,4 @@
-package com.rfidwms.config;
+package com.axacrate.wms.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

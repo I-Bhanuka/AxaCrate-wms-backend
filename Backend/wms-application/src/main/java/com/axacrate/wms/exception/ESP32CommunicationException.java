@@ -1,4 +1,4 @@
-package com.rfidwms.exception;
+package com.axacrate.wms.exception;
 
 /**
  * Exception thrown when ESP32 communication fails

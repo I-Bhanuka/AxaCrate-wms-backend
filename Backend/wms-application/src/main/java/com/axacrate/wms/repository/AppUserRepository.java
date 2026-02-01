@@ -1,6 +1,6 @@
-package com.rfidwms.repository;
+package com.axacrate.wms.repository;
 
-import com.rfidwms.model.entity.AppUser;
+import com.axacrate.wms.entity.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

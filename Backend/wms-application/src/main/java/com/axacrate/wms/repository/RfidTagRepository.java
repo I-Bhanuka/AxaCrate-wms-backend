@@ -1,6 +1,6 @@
-package com.rfidwms.repository;
+package com.axacrate.wms.repository;
 
-import com.rfidwms.model.entity.RfidTag;
+import com.axacrate.wms.entity.RfidTag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

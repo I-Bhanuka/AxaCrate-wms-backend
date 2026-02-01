@@ -1,4 +1,4 @@
-package com.rfidwms.model.dto;
+package com.axacrate.wms.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
