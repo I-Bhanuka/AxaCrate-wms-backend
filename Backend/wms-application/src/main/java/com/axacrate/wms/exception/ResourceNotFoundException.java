@@ -1,4 +1,4 @@
-package com.rfidwms.exception;
+package com.axacrate.wms.exception;
 
 /**
  * Exception thrown when a requested resource is not found

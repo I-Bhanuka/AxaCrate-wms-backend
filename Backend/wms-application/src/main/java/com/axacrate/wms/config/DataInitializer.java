@@ -1,7 +1,7 @@
-package com.rfidwms.config;
+package com.axacrate.wms.config;
 
-import com.rfidwms.model.entity.*;
-import com.rfidwms.repository.*;
+import com.axacrate.wms.entity.*;
+import com.axacrate.wms.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
