@@ -1,30 +1,24 @@
 package com.axacrate.wms.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 
 /**
  * DTO for RFID Read Event from ESP32
  * Sent when ESP32 detects an RFID tag
  */
-@Data
+
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class RfidReadRequestDTO {
 
-    @NotNull(message = "Hardware ID is required")
-    private UUID hardwareId;
+    @NotBlank(message = "Tag UID is required")
+    private String tagId;
 
-    @NotBlank(message = "Tag EPC is required")
-    @Size(max = 255)
-    private String tagEpc;
+    @NotBlank(message = "Reader ID is required")
+    private String readerId;
 
-    @NotNull(message = "Timestamp is required")
-    private OffsetDateTime timestamp;
-
-    private Integer signalStrength; // Optional: RSSI value
 }
