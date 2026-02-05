@@ -24,8 +24,8 @@ public class RfidTag {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "epc", nullable = false, unique = true, length = 255)
-    private String epc;
+    @Column(name = "uid", nullable = false, unique = true, length = 255)
+    private String uid;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_item_id")
