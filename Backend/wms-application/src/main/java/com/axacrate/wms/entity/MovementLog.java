@@ -61,10 +61,12 @@ public class MovementLog {
     }
 
     public enum EventType {
-        IN_MOVEMENT("IN_Movement"),
-        QC_MOVEMENT("QC_Movement"),
-        STORE_MOVEMENT("STORE_Movement"),
-        OUT_MOVEMENT("OUT_Movement");
+        MOVEMENT("Movement"),
+        WRITE_SCAN("Write_Scan"),
+        TAG_REGISTERED("Tag_Registered"),
+        TAG_WRITE_SUCCESS("Tag_Write_Success"),
+        TAG_WRITE_FAILED("Tag_Write_Failed"),
+        READ_ONLY_SCAN("Read_Only_Scan");
 
         private final String value;
 
