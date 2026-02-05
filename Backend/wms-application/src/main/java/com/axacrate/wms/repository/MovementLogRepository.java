@@ -90,12 +90,18 @@ public interface MovementLogRepository extends JpaRepository<MovementLog, UUID> 
     List<MovementLog> findRecentMovementsToZone(@Param("zoneId") UUID zoneId);
 
     /**
-     * Find movements by tag EPC (instead of tag ID)
-     * Navigates relationship: movement -> tag -> epc
+     * Find movements by tag uid (instead of tag ID)
+     * Navigates relationship: movement -> tag -> uid
      *
-     * @param epc - RFID tag EPC
+     * @param uid - RFID tag uid
      * @return List of movements
      */
-    @Query("SELECT ml FROM MovementLog ml WHERE ml.tag.epc = :epc ORDER BY ml.occurredAt DESC")
-    List<MovementLog> findByTagEpc(@Param("epc") String epc);
+    @Query("""
+    SELECT ml
+    FROM MovementLog ml
+    WHERE ml.tag.uid = :uid
+    ORDER BY ml.occurredAt DESC
+    """)
+    List<MovementLog> findByTagUid(@Param("uid") String uid);
+
 }
