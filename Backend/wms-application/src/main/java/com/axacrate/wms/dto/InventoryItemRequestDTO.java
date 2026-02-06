@@ -1,5 +1,7 @@
 package com.axacrate.wms.dto;
 
+import com.axacrate.wms.entity.RfidTag;
+import com.axacrate.wms.entity.Zone;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -8,21 +10,22 @@ import java.util.UUID;
 /**
  * DTO for Creating/Updating Inventory Item
  */
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class InventoryItemRequestDTO {
 
-    @NotBlank(message = "SKU is required")
+    @NotBlank(message = "SKU is required") // SKU should not be blank and inventoryController will validate it using @Valid
     private String sku;
 
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "Name is required") // Name should not be blank and inventoryController will validate it using @Valid
     private String name;
 
     @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity cannot be negative")
     private Integer quantity;
 
-    private UUID currentZoneId; // Optional initially
+    @NotNull(message = "RFID Tag is required")
+    private String rfidTag; // RFID tag associated with the inventory item
 }

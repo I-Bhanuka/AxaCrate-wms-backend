@@ -23,14 +23,14 @@ import java.util.UUID;
 public interface RfidTagRepository extends JpaRepository<RfidTag, UUID> {
 
     /**
-     * Find tag by EPC (Electronic Product Code)
-     * EPC is unique identifier on the RFID tag
-     * SQL: SELECT * FROM rfid_tag WHERE epc = ?
+     * Find tag by UID (Unique Identifier)
+     * UID is unique identifier on the RFID tag
+     * SQL: SELECT * FROM rfid_tag WHERE uid = ?
      *
-     * @param epc - RFID tag identifier
+     * @param uid - RFID tag identifier
      * @return Optional containing tag if found
      */
-    Optional<RfidTag> findByEpc(String epc);
+    Optional<RfidTag> findByUid(String uid);
 
     /**
      * Find all tags with a specific status
@@ -74,12 +74,13 @@ public interface RfidTagRepository extends JpaRepository<RfidTag, UUID> {
     List<RfidTag> findStaleTags(@Param("threshold") LocalDateTime threshold);
 
     /**
-     * Check if an EPC already exists
+     * Check if a UID already exists
      * Returns true/false instead of the actual tag
-     * More efficient than findByEpc when you just need to check existence
+     * More efficient than findByUid when you just need to check existence
      *
-     * @param epc - RFID tag identifier
+     * @param uid - RFID tag identifier
      * @return true if exists, false otherwise
      */
-    boolean existsByEpc(String epc);
+    boolean existsByUid(String uid);
+
 }
