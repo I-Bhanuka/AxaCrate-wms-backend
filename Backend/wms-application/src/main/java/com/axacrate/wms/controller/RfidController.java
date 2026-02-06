@@ -18,15 +18,28 @@ public class RfidController {
         this.rfidService = rfidService;
     } // Spring will inject the service
 
+    // Endpoint to receive RFID read events from ESP32 which is related to movement logging
     @PostMapping("/read")
     public ResponseEntity<ApiResponse> readRfid(@Valid @RequestBody RfidReadRequestDTO request) {
-
         // Delegate to service
         rfidService.handleRfidRead(request);
 
         // Return simple response
         return ResponseEntity.ok(
                 new ApiResponse("success", "RFID data received")
+        );
+    }
+
+    // Another endpoint which is sent from the ESP32 to send the UID to the UI /api/rfid/write-scan
+    // This will be used to assign the tag to an inventory item or create a new item.
+    @PostMapping("/write-scan")
+    public ResponseEntity<ApiResponse> writeRfidScan(@Valid @RequestBody RfidReadRequestDTO request){
+        // Delegate to service
+        rfidService.handleRfidWriteScan(request);
+
+        // Return simple response
+        return ResponseEntity.ok(
+                new ApiResponse("success", "RFID write scan data received")
         );
     }
 }
