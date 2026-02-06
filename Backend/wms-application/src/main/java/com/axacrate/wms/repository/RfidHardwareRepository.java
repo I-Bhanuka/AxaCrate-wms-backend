@@ -22,6 +22,15 @@ import java.util.UUID;
 public interface RfidHardwareRepository extends JpaRepository<RfidHardware, UUID> {
 
     /**
+     * Find hardware by name
+     * SQL: SELECT * FROM rfid_hardware WHERE name = ?
+     *
+     * @param name - nane
+     * @return Optional containing hardware if found
+     */
+    Optional<RfidHardware> findByName(String name);
+
+    /**
      * Find hardware assigned to a specific zone
      * Due to 1:1 relationship, returns Optional (single hardware)
      * SQL: SELECT * FROM rfid_hardware WHERE zone_location = ?

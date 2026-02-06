@@ -42,7 +42,7 @@ public class MovementLog {
     @Column(name = "event_type", nullable = false, length = 20)
     private EventType eventType;
 
-    @CreationTimestamp
+    @CreationTimestamp // Hiberate will automatically set this field to the current timestamp when the entity is created
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private OffsetDateTime occurredAt;
 
@@ -60,13 +60,15 @@ public class MovementLog {
         this.synced = true;
     }
 
+    // TODO: Update the event types for meaningful names such as Tag_Creation, Assigned, Unassigned.
     public enum EventType {
         MOVEMENT("Movement"),
-        WRITE_SCAN("Write_Scan"),
+        ASSIGNED("Assigned"),
+        UNASSIGNED("Unassigned"),
         TAG_REGISTERED("Tag_Registered"),
         TAG_WRITE_SUCCESS("Tag_Write_Success"),
         TAG_WRITE_FAILED("Tag_Write_Failed"),
-        READ_ONLY_SCAN("Read_Only_Scan");
+        READ_ONLY_SCAN("Read_Only_Scan"),;
 
         private final String value;
 
