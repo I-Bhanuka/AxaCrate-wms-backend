@@ -32,6 +32,8 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
      */
     Optional<InventoryItem> findBySku(String sku);
 
+    // optional is like a return type(int,String) that may or may not contain a non-null value.
+
     /**
      * Find all items currently in a specific zone
      * SQL: SELECT * FROM inventory_item WHERE current_zone_id = ?
@@ -39,7 +41,7 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
      * @param zoneId - Zone ID
      * @return List of items in that zone
      */
-    List<InventoryItem> findByCurrentZoneId(UUID zoneId);
+    List<InventoryItem> findByCurrentZoneId(String zoneId);
 
     /**
      * Find all items that are not assigned to any zone
