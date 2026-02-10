@@ -57,18 +57,33 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
      * Create default warehouse with all zones and hardware
      */
     private void initializeWarehouse() {
-        // Check if warehouse already exists (don't create duplicates!)
         Optional<Warehouse> existingWarehouse = warehouseRepository.findByName("Main Warehouse");
 
+        Warehouse warehouse;
         if (existingWarehouse.isPresent()) {
-            log.info("✓ Warehouse already exists. Skipping initialization.");
+            warehouse = existingWarehouse.get();
+            log.info("✓ Warehouse already exists. Checking zones and hardware...");
+
+            // Check each zone, create if missing
+            createZoneIfNotExists(warehouse, "Unloading Bay", Zone.ZoneType.UNLOADING_ZONE, 100);
+            Zone writerZone = createZoneIfNotExists(warehouse, "Tag Writing Station", Zone.ZoneType.WRITER_ZONE, 50);
+            Zone qcZone = createZoneIfNotExists(warehouse, "Quality Control", Zone.ZoneType.QC_ZONE, 200);
+            Zone storageZone = createZoneIfNotExists(warehouse, "Main Storage", Zone.ZoneType.STORAGE_ZONE, 500);
+            Zone dispatchZone = createZoneIfNotExists(warehouse, "Dispatch Area", Zone.ZoneType.DISPATCH_ZONE, 100);
+
+            // Create hardware for zones if missing
+            createRfidHardwareIfNotExists(writerZone, RfidHardware.HardwareType.WRITER);
+            createRfidHardwareIfNotExists(qcZone, RfidHardware.HardwareType.READER);
+            createRfidHardwareIfNotExists(storageZone, RfidHardware.HardwareType.READER);
+            createRfidHardwareIfNotExists(dispatchZone, RfidHardware.HardwareType.READER);
+
             return;
         }
 
         log.info("Creating Main Warehouse...");
 
         // Create warehouse
-        Warehouse warehouse = new Warehouse();
+        warehouse = new Warehouse();
         warehouse.setName("Main Warehouse");
         warehouse.setAddress("123 Industrial Zone, Colombo, Sri Lanka");
         warehouse.setTotalCapacity(10000);
@@ -122,6 +137,7 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
      */
     private void createRfidHardware(Zone zone, RfidHardware.HardwareType hardwareType, String description) {
         RfidHardware hardware = new RfidHardware();
+        hardware.setName(zone.getName() + "-" + hardwareType.name());
         hardware.setHardwareType(hardwareType);
         hardware.setHardwareStatus(RfidHardware.HardwareStatus.ACTIVE);
         hardware.setZoneLocation(zone);  // Assign to zone
@@ -155,6 +171,25 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
         log.info("✓ Created admin user");
         log.info("  Username: admin");
         log.info("  Password: admin123");
-        log.warn("  ⚠️  WARNING: Please change the default admin password in production!");
+        log.warn("  WARNING: Please change the default admin password in production!");
     }
+
+
+    // Helper methods to check if zones and hardware already exist (to avoid duplicates on restart)
+    private Zone createZoneIfNotExists(Warehouse warehouse, String name, Zone.ZoneType zoneType, int capacity) {
+        return zoneRepository.findByNameAndWarehouseId(name, warehouse.getId())
+                .orElseGet(() -> createZone(warehouse, name, zoneType, capacity));
+    }
+
+    private void createRfidHardwareIfNotExists(Zone zone, RfidHardware.HardwareType hardwareType) {
+        boolean exists = rfidHardwareRepository
+                .findByZoneAndType(zone.getId(), hardwareType)
+                .isPresent();
+
+        if (exists) {
+            return;
+        }
+        createRfidHardware(zone, hardwareType, "Auto-created hardware");
+    }
+
 }
