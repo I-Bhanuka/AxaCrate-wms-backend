@@ -18,4 +18,11 @@ public class ZoneResponseDTO {
     private Integer capacity;
     private Integer currentItemCount;
     private String warehouseName;
+    private String status;
+
+    // Hardware information(read only)
+    private boolean hasHardware;
+    private String hardwareName;
+    private String hardwareType;
+    private String hardwareStatus;
 }
