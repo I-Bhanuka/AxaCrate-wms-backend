@@ -2,6 +2,7 @@ package com.axacrate.wms.config;
 
 import com.axacrate.wms.entity.*;
 import com.axacrate.wms.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -22,6 +23,7 @@ import java.util.Optional;
  *
  * This only runs ONCE on first startup (checks if data exists)
  */
+@Transactional
 @Component // Makes this a Spring-managed bean
 @RequiredArgsConstructor // Lombok generates constructor with all final fields (dependency injection)
 @Slf4j //  Lombok provides logger (log.info(), log.warn(), ... )
