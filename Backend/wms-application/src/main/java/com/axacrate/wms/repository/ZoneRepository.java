@@ -58,10 +58,30 @@ public interface ZoneRepository extends JpaRepository<Zone, UUID> {
      * Uses JPQL (Java Persistence Query Language)
      *
      * @param warehouseId - Warehouse ID
-     * @param zoneType - Zone type
+     * @param zoneType - Type of zone (QC_ZONE, STORAGE_ZONE, etc.)
      * @return Optional containing the zone if found
      */
     @Query("SELECT z FROM Zone z WHERE z.warehouse.id = :warehouseId AND z.zoneType = :zoneType")
     Optional<Zone> findByWarehouseAndType(@Param("warehouseId") UUID warehouseId,
                                           @Param("zoneType") Zone.ZoneType zoneType);
+
+    /**
+     * Find a zone by the zone name
+     * SQL: SELECT * FROM zone WHERE name = ?
+     *
+     * @param name - Zone name
+     * @return Optional containing zone if found
+     */
+    Optional<Zone> findByNameIgnoreCase(String name);
+
+    /**
+     * Find a specific zone by name
+     * SQL: SELECT * FROM zone WHERE name = ? AND zone_type = ?
+     *
+     * @param name - Zone name
+     * @param zoneType - Type of zone (QC_ZONE, STORAGE_ZONE, etc.)
+     * @return Optional containing zone if found
+     */
+    Optional<Zone> findByNameAndZoneType(String name, Zone.ZoneType zoneType);
+
 }
