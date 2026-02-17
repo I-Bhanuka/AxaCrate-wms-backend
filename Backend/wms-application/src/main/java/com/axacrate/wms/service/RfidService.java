@@ -1,19 +1,21 @@
 package com.axacrate.wms.service;
 
 import com.axacrate.wms.dto.RfidReadRequestDTO;
+import com.axacrate.wms.dto.RfidWriteScanResponseDTO;
+import com.axacrate.wms.exception.ResourceNotFoundException;
 
-import com.axacrate.wms.entity.MovementLog;
-import com.axacrate.wms.entity.RfidHardware;
-import com.axacrate.wms.entity.RfidTag;
-import com.axacrate.wms.entity.Zone;
+import com.axacrate.wms.entity.*;
 import com.axacrate.wms.repository.MovementLogRepository;
 import com.axacrate.wms.repository.RfidHardwareRepository;
 import com.axacrate.wms.repository.RfidTagRepository;
 import com.axacrate.wms.repository.ZoneRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Slf4j
 @Service
@@ -25,15 +27,20 @@ public class RfidService {
     private final ZoneRepository zoneRepository;
     private final RfidHardwareRepository hardwareRepository;
 
+    Deque<RfidWriteScanResponseDTO> latestScans;
+
+
     public RfidService(RfidTagRepository rfidTagRepository,
                        MovementLogRepository movementLogRepository,
                        ZoneRepository zoneRepository,
-                       RfidHardwareRepository hardwareRepository){
+                       RfidHardwareRepository hardwareRepository) {
         // Injecting repositories through constructor injection. Spring will automatically provide the implementations at runtime.
         this.rfidTagRepository = rfidTagRepository;
         this.movementLogRepository = movementLogRepository;
         this.zoneRepository = zoneRepository;
         this.hardwareRepository = hardwareRepository;
+
+        this.latestScans = new ConcurrentLinkedDeque<>();;
     }
 
     public void handleRfidRead(RfidReadRequestDTO request) {
@@ -63,58 +70,91 @@ public class RfidService {
         // 7. Return success / failure
     }
 
-
-    public void handleRfidWriteScan(RfidReadRequestDTO request) {
+    @Transactional
+    public RfidWriteScanResponseDTO handleRfidWriteScan(RfidReadRequestDTO request) {
         // The method will check 3 possibilities when it receives the tag UID from the ESP32:
         //    a. If the tag has data of an inventory item. Then the response status "ASSIGNED" -> UI will show update
         //    b. If the tag is not registered. Register a new item. Then the response status "NEW_TAG" -> UI will show "New tag" then empty form
         //    c. If the tag is registered but not assigned to an inventory item. Then the response status "UNASSIGNED" -> UI will show the empty form
 
+        log.info("Write scan received from reader: {}, for tag: {}", request.getReaderId(), request.getTagId());
+
         // Find the tag
         RfidTag rfidTag = rfidTagRepository.findByUid(request.getTagId()).orElse(null);
 
-        Zone writerZone = getWriterZone();
+        Zone writerZone = getWriterZone(request.getReaderId());
 
         // Create a new tag in DB if not there
         if (rfidTag == null) {
-            rfidTag = rfidTagRepository.save(createTag(request.getTagId()));
-            log.info("New tag created!");
+            log.info("New tag detected: {}. Creating...", request.getTagId());
+            rfidTag = rfidTagRepository.save(createTag(request.getTagId(), request.getReaderId()));
+            log.info("New tag created: {}", rfidTag.getUid());
             // Query the movement log
             logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.TAG_REGISTERED);
-            log.info("Write scan event logged for new tag!");
-            return;
+            log.info("Movement log logged a new tag registration!");
+        } else {
+
+            // If tag already exists and there no inventory item assigned to it
+            if (rfidTag.getInventoryItem() == null) {
+                // UNASSIGNED TAG
+                log.info("Unassigned tag scanned: {}. Logging unassigned event.", rfidTag.getUid());
+                logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.UNASSIGNED);
+                log.info("Movement event logged for unassigned tag!");
+            } else {
+                // ASSIGNED TAG
+                log.info("Assigned tag scanned: {}. Logging assigned event.", rfidTag.getUid());
+                logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.ASSIGNED);
+                log.info("Movement event logged for assigned tag!");
+            }
         }
 
-         // If tag already exists and there no inventory item assigned to it
-        if (rfidTag.getInventoryItem() == null) {
-            // UNASSIGNED TAG
-            log.info("Unassigned tag scanned!");
-            logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.UNASSIGNED);
-            log.info("Tag registered event logged for unassigned tag!");
-        } else {
-            // ASSIGNED TAG
-            log.info("Assigned tag scanned!");
-            logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.ASSIGNED);
-            log.info("Movement event logged for assigned tag!");
+        // Build the response based on the tag status and inventory item assignment
+        RfidWriteScanResponseDTO response = buildWriteScanResponse(rfidTag);
+
+        // Cache the results for UI to retrieve via /write-latest endpoint
+        latestScans.addLast(response);
+        log.info("Write scan response cached for tag: {}", rfidTag.getUid());
+
+        log.info("Write scan response: {}", response.getStatus());
+        return response;
+    }
+
+    public RfidWriteScanResponseDTO getLatestWriteScan() {
+        // This method will return the latest write scan result for the UI to display.
+
+        // For simplicity, we will return the latest scan for a single reader (assuming only one writer zone for now)
+
+        if (latestScans.isEmpty()) {
+            log.warn("No write scans found in cache.");
+            return null; // Or return a default response indicating no scans
         }
+
+        // Get the latest scan (for simplicity, we take the first entry in the map)
+        RfidWriteScanResponseDTO latestScan = latestScans.peekLast();
+        log.info("Latest write scan retrieved: {}", latestScan.getTagUid());
+        return latestScan;
     }
 
     // Helper Methods
-    private RfidTag createTag(String uid){
+
+    // HELPER: Create new RFID tag entry in the database
+    private RfidTag createTag(String uid, String readerName){
         return RfidTag.builder().
                 uid(uid).
                 status(RfidTag.RfidStatus.ACTIVE).
                 lastSeenAt(LocalDateTime.now()).
-                lastSeenZone(getWriterZone()).
+                lastSeenZone(getWriterZone(readerName)).
                 build();
     }
 
-    private Zone getWriterZone() {
+    // HELPER: Get the writer zone information
+    private Zone getWriterZone(String readerName) {
         // Fetch WRITER_ZONE object from DB
-        return zoneRepository.findByZoneType(Zone.ZoneType.WRITER_ZONE)
-                .orElseThrow(() -> new RuntimeException("WRITER_ZONE not found"));
+        return zoneRepository.findByNameAndZoneType(readerName, Zone.ZoneType.WRITER_ZONE)
+                .orElseThrow(() -> new ResourceNotFoundException("WRITER_ZONE not found"));
     }
 
+    // HELPER: Check hardware availability and status
     private RfidHardware hardwareCheck(String readerName) {
         // This method can be used for both read and write events
 
@@ -141,6 +181,7 @@ public class RfidService {
         return hardware;
     }
 
+    // HELPER: Create new hardware entry
     private RfidHardware createHardware(String name, RfidHardware.HardwareType type) {
         // This method will create a new writer hardware entry.
 
@@ -153,17 +194,51 @@ public class RfidService {
                 build();
     }
 
+    // HELPER: Log movement event
     private void logEvent(RfidTag tag, String readerName, Zone zone, MovementLog.EventType eventType) {
         // This method will log the movement event into the MovementLog table
 
         MovementLog log = MovementLog.builder().
                 tag(tag).
-                fromZone(null).toZone(zone).
+                fromZone(null).
+                toZone(zone).
                 hardware(hardwareCheck(readerName)).
                 eventType(eventType).
                 synced(false).
                 build();
 
         movementLogRepository.save(log);
+
+        // Update the last seen location and save the tag entity after logging the event
+         tag.setLastSeenAt(LocalDateTime.now());
+         tag.setLastSeenZone(zone);
+         rfidTagRepository.save(tag);
+    }
+
+    // HELPER: Build Write Scan Response
+    private RfidWriteScanResponseDTO buildWriteScanResponse(RfidTag tag) {
+        RfidWriteScanResponseDTO.RfidWriteScanResponseDTOBuilder builder = RfidWriteScanResponseDTO.builder()
+                .tagUid(tag.getUid())
+                .tagStatus(tag.getStatus().toString());
+
+        if (tag.getInventoryItem() == null) {
+            return builder
+                    .status("UNASSIGNED")
+                    .message("Tag is unassigned. You can create a new inventory item.")
+                    .allowEdit(true)
+                    .build();
+        } else {
+            InventoryItem item = tag.getInventoryItem();
+            return builder
+                    .status("ASSIGNED")
+                    .message("Tag is assigned to an inventory item.")
+                    .allowEdit(false)
+                    .inventoryItemId(item.getId())
+                    .sku(item.getSku())
+                    .itemName(item.getName())
+                    .quantity(item.getQuantity())
+                    .currentZone(item.getCurrentZoneName())
+                    .build();
+        }
     }
 }
