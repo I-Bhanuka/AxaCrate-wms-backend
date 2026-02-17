@@ -14,8 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 @Slf4j
 @Service
@@ -27,7 +27,7 @@ public class RfidService {
     private final ZoneRepository zoneRepository;
     private final RfidHardwareRepository hardwareRepository;
 
-    private final Map<String, RfidWriteScanResponseDTO> latestScans;
+    Deque<RfidWriteScanResponseDTO> latestScans;
 
 
     public RfidService(RfidTagRepository rfidTagRepository,
@@ -40,7 +40,7 @@ public class RfidService {
         this.zoneRepository = zoneRepository;
         this.hardwareRepository = hardwareRepository;
 
-        this.latestScans = new ConcurrentHashMap<>();
+        this.latestScans = new ConcurrentLinkedDeque<>();;
     }
 
     public void handleRfidRead(RfidReadRequestDTO request) {
@@ -112,11 +112,27 @@ public class RfidService {
         RfidWriteScanResponseDTO response = buildWriteScanResponse(rfidTag);
 
         // Cache the results for UI to retrieve via /write-latest endpoint
-        latestScans.put(request.getReaderId(), response);
+        latestScans.addLast(response);
         log.info("Write scan response cached for tag: {}", rfidTag.getUid());
 
         log.info("Write scan response: {}", response.getStatus());
         return response;
+    }
+
+    public RfidWriteScanResponseDTO getLatestWriteScan() {
+        // This method will return the latest write scan result for the UI to display.
+
+        // For simplicity, we will return the latest scan for a single reader (assuming only one writer zone for now)
+
+        if (latestScans.isEmpty()) {
+            log.warn("No write scans found in cache.");
+            return null; // Or return a default response indicating no scans
+        }
+
+        // Get the latest scan (for simplicity, we take the first entry in the map)
+        RfidWriteScanResponseDTO latestScan = latestScans.peekLast();
+        log.info("Latest write scan retrieved: {}", latestScan.getTagUid());
+        return latestScan;
     }
 
     // Helper Methods
