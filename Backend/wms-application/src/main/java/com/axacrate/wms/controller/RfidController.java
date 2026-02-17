@@ -2,6 +2,7 @@ package com.axacrate.wms.controller;
 
 import com.axacrate.wms.dto.ApiResponse;
 import com.axacrate.wms.dto.RfidReadRequestDTO;
+import com.axacrate.wms.dto.RfidWriteScanResponseDTO;
 import com.axacrate.wms.service.RfidService;
 
 import jakarta.validation.Valid;
@@ -26,20 +27,22 @@ public class RfidController {
 
         // Return simple response
         return ResponseEntity.ok(
-                new ApiResponse("success", "RFID data received")
+                ApiResponse.success("RFID data received", null)
         );
     }
 
     // Another endpoint which is sent from the ESP32 to send the UID to the UI /api/rfid/write-scan
     // This will be used to assign the tag to an inventory item or create a new item.
     @PostMapping("/write-scan")
-    public ResponseEntity<ApiResponse> writeRfidScan(@Valid @RequestBody RfidReadRequestDTO request){
+    public ResponseEntity<ApiResponse<RfidWriteScanResponseDTO>> writeRfidScan(
+            @Valid @RequestBody RfidReadRequestDTO request){
+
         // Delegate to service
-        rfidService.handleRfidWriteScan(request);
+        RfidWriteScanResponseDTO responseDTO = rfidService.handleRfidWriteScan(request);
 
         // Return simple response
         return ResponseEntity.ok(
-                new ApiResponse("success", "RFID write scan data received")
+                ApiResponse.success(responseDTO, "RFID write scan processed")
         );
     }
 }
