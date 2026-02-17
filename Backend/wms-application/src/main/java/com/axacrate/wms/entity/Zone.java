@@ -35,6 +35,12 @@ public class Zone {
     @Column(name = "zone_type", nullable = false, length = 20)
     private ZoneType zoneType;
 
+    @Builder.Default
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private ZoneStatus status = ZoneStatus.ACTIVE;
+
     @Setter
     @Column(name = "capacity", nullable = false)
     private Integer capacity;
@@ -105,5 +111,10 @@ public class Zone {
         public String getValue() {
             return value;
         }
+    }
+
+    public enum ZoneStatus {
+        ACTIVE,
+        INACTIVE
     }
 }

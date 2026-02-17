@@ -26,6 +26,10 @@ public class RfidHardware {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @Setter
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_location", unique = true)
     @JsonIgnore

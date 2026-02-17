@@ -49,7 +49,7 @@ public interface ZoneRepository extends JpaRepository<Zone, UUID> {
      * @param zoneType - Type of zone (QC_ZONE, STORAGE_ZONE, etc.)
      * @return List of zones of that type
      */
-    List<Zone> findByZoneType(Zone.ZoneType zoneType);
+    Optional<Zone> findByZoneType(Zone.ZoneType zoneType);
 
     /**
      * Find a zone by warehouse and type using custom query

@@ -1,7 +1,9 @@
 package com.axacrate.wms.repository;
 
 import com.axacrate.wms.entity.InventoryItem;
+import com.axacrate.wms.entity.RfidTag;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,7 +22,8 @@ import java.util.UUID;
  * - Count items
  */
 @Repository
-public interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
+public interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID>,
+        JpaSpecificationExecutor<InventoryItem> {
 
     /**
      * Find inventory item by SKU (Stock Keeping Unit)
@@ -39,7 +42,7 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
      * @param zoneId - Zone ID
      * @return List of items in that zone
      */
-    List<InventoryItem> findByCurrentZoneId(UUID zoneId);
+    List<InventoryItem> findByCurrentZoneId(String zoneId);
 
     /**
      * Find all items that are not assigned to any zone
@@ -70,6 +73,18 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
      * @param warehouseId - Warehouse ID
      * @return List of items in that warehouse
      */
+//--------------------------------------------------------------------------------------------------------
+    /**
+     * Find inventory item by RFID tag UID
+     * SQL: SELECT i FROM inventory_item i JOIN rfid_tag t ON i.rfid_tag_id = t.id WHERE t.uid = ?
+     *
+     * @param rfidTag - RFID tag UID
+     * @return Optional containing item if found
+     */
+    List<InventoryItem>findByRfidTagUid(String rfidTag);
+
+
+
     @Query("SELECT i FROM InventoryItem i WHERE i.currentZone.warehouse.id = :warehouseId")
     List<InventoryItem> findByWarehouseId(@Param("warehouseId") UUID warehouseId);
 
