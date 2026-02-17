@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "zone")
+@Table(name = "zone", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"name", "warehouse_id"})
+})
 @Getter  // Generate only getters
 @NoArgsConstructor
 @AllArgsConstructor
@@ -80,8 +82,16 @@ public class Zone {
         return rfidHardware != null;
     }
 
+    public String getHardwareName(){
+        return rfidHardware != null? rfidHardware.getName() : null;
+    }
+
     public String getHardwareType() {
-        return rfidHardware != null ? rfidHardware.getHardwareType().toString() : "NONE";
+        return rfidHardware != null ? rfidHardware.getHardwareType().name() : null;
+    }
+
+    public String getHardwareStatus() {
+        return rfidHardware != null ? rfidHardware.getHardwareStatus().name() : null;
     }
 
     @PrePersist
