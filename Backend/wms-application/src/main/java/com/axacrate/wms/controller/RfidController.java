@@ -25,13 +25,13 @@ public class RfidController {
         // Delegate to service
         rfidService.handleRfidRead(request);
 
-        // Return simple response
+        // Return response
         return ResponseEntity.ok(
                 ApiResponse.success("RFID data received", null)
         );
     }
 
-    // Another endpoint which is sent from the ESP32 to send the UID to the UI /api/rfid/write-scan
+    // Endpoint which is sent from the ESP32 to send the UID to the UI /api/rfid/write-scan
     // This will be used to assign the tag to an inventory item or create a new item.
     @PostMapping("/write-scan")
     public ResponseEntity<ApiResponse<RfidWriteScanResponseDTO>> writeRfidScan(
@@ -40,9 +40,27 @@ public class RfidController {
         // Delegate to service
         RfidWriteScanResponseDTO responseDTO = rfidService.handleRfidWriteScan(request);
 
-        // Return simple response
+        // Return response
         return ResponseEntity.ok(
                 ApiResponse.success(responseDTO, "RFID write scan processed")
+        );
+    }
+
+    @GetMapping("/write-latest")
+    public ResponseEntity<ApiResponse<RfidWriteScanResponseDTO>>  getLatestWriteScan() {
+
+        // Delegate to service
+        RfidWriteScanResponseDTO responseDTO = rfidService.getLatestWriteScan();
+
+        // Return  response
+        if (responseDTO == null) {
+            return ResponseEntity.ok(
+                    ApiResponse.success(null, "No RFID write scan found")
+            );
+        }
+
+        return ResponseEntity.ok(
+                ApiResponse.success(responseDTO, "Latest RFID write scan retrieved")
         );
     }
 }
