@@ -2,22 +2,16 @@ package com.axacrate.wms.service;
 
 import com.axacrate.wms.dto.ZoneCreateDTO;
 import com.axacrate.wms.dto.ZoneResponseDTO;
-import com.axacrate.wms.dto.ZoneUpdateDTO;
-import com.axacrate.wms.entity.RfidHardware;
 import com.axacrate.wms.entity.Warehouse;
 import com.axacrate.wms.entity.Zone;
 import com.axacrate.wms.repository.InventoryItemRepository;
-import com.axacrate.wms.repository.RfidHardwareRepository;
 import com.axacrate.wms.repository.WarehouseRepository;
 import com.axacrate.wms.repository.ZoneRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.axacrate.wms.exception.ResourceNotFoundException;
 
 import java.util.List;
-import java.util.UUID;
-//import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -65,6 +59,16 @@ public class ZoneService {
 
         // Return response DTO
         return mapToResponseDTO(savedZone);
+    }
+
+    // Retrieving all the zones and mapping them to the ZoneResponseDTO
+    public List<ZoneResponseDTO> getAllZones() {
+
+        List<Zone> zones = zoneRepository.findAll();
+
+        return zones.stream()
+                .map(this::mapToResponseDTO)
+                .toList();
     }
 
     // Mapper to map the zone entity to the ZoneResponseDTO
