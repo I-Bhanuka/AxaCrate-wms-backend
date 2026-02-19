@@ -17,12 +17,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
 
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
-import java.rmi.server.UID;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,17 +48,17 @@ public class InventoryService {
                 orElseThrow(() -> new ResourceNotFoundException("RFID Tag not found"));
 
         // Check if RFID Tag is already assigned to an inventory item
-        if(rfidTag.getInventoryItem() != null) {
+        if (rfidTag.getInventoryItem() != null) {
             throw new BusinessRuleViolationException("RFID Tag already assigned");
         }
 
         log.info("RFID Tag found: {}", rfidTag.getUid());
 
         // Find Writer Zone
-        Zone writerZone  = zoneRepository.findByZoneType(Zone.ZoneType.WRITER_ZONE).
+        Zone writerZone = zoneRepository.findByNameAndZoneType(requestDTO.getZoneName() , Zone.ZoneType.WRITER_ZONE).
                 orElseThrow(() -> new IllegalArgumentException("Writer zone not found"));
 
-        log.info("Zone found: {}", writerZone );
+        log.info("Zone found: {}", writerZone);
 
         // Create Inventory Item entity
         InventoryItem entity = InventoryItem.builder()
@@ -102,7 +100,7 @@ public class InventoryService {
         // Build dynamic query based on filters
         // This allows combining multiple filters
 
-        Specification<InventoryItem> spec = Specification.where((Specification<InventoryItem>) null);
+        Specification<InventoryItem> spec = Specification.where((Specification<InventoryItem>) (root, query, cb) -> cb.conjunction());
 
         // Filter by zoneId
         if (zoneId != null) {
@@ -151,22 +149,22 @@ public class InventoryService {
      * Format: "createdAt, desc"
      */
     private Sort parseSortParameter(String sortString) {
-      String[] split = sortString.split(",");
+        String[] split = sortString.split(",");
 
-      // below lines to avoid index out of bound error
-      String fields = split.length > 0 ? split[0] : "createdAt";
-      String direction = split.length > 1 ? split[1] : "desc";
+        // below lines to avoid index out of bound error
+        String fields = split.length > 0 ? split[0] : "createdAt";
+        String direction = split.length > 1 ? split[1] : "desc";
 
-      // validate field name to avoid sql injection
-      List<String> validFields = List.of("sku", "name", "quantity", "createdAt", "updatedAt");
+        // validate field name to avoid sql injection
+        List<String> validFields = List.of("sku", "name", "quantity", "createdAt", "updatedAt");
 
-      if (!validFields.contains(fields)) {
-          log.warn("Invalid sort parameter: {}", fields);
-          fields = "createdAt"; // default field
-      }
+        if (!validFields.contains(fields)) {
+            log.warn("Invalid sort parameter: {}", fields);
+            fields = "createdAt"; // default field
+        }
 
-      // Parse direction
-      Sort.Direction dir = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        // Parse direction
+        Sort.Direction dir = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         return Sort.by(dir, fields);
 
