@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/zone")
@@ -30,6 +31,13 @@ public class ZoneController {
     @GetMapping("/all")
     public ResponseEntity<List<ZoneResponseDTO>> getAllZones() {
         return ResponseEntity.ok(zoneService.getAllZones());
+    }
+
+    // Retrieving a specific zone by its ID
+    @GetMapping("/{id}")
+    public ResponseEntity<ZoneResponseDTO> getZoneById(@PathVariable("id") UUID id) {
+        ZoneResponseDTO zone = zoneService.getZoneById(id);
+        return ResponseEntity.ok(zone);
     }
 
 }
