@@ -1,6 +1,7 @@
 package com.axacrate.wms.config;
 
 import com.axacrate.wms.entity.*;
+import com.axacrate.wms.enums.Role;
 import com.axacrate.wms.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -135,7 +136,7 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
      */
     private void initializeAdminUser() {
         // Check if admin already exists
-        if (appUserRepository.existsByUsername("admin")) {
+        if (appUserRepository.existsByUsername("pulindu000")) {
             log.info("✓ Admin user already exists. Skipping creation.");
             return;
         }
@@ -143,12 +144,12 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
         log.info("Creating admin user...");
 
         AppUser admin = new AppUser();
-        admin.setFirstName("System");
-        admin.setLastName("Administrator");
-        admin.setPhoneNumber("0771234567");
-        admin.setUsername("admin");
+        admin.setFirstName("pulindu");
+        admin.setLastName("vidmal");
+        admin.setPhoneNumber("0779240380");
+        admin.setUsername("pulindu000");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));  // Hash the password!
-        //admin.setRole(AppUser.Role.ADMIN);
+        admin.setRole(Role.MANAGER);
 
         appUserRepository.save(admin);
 

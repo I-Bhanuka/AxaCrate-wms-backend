@@ -2,74 +2,68 @@ package com.axacrate.wms.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.hibernate.annotations.UuidGenerator;
 
 import com.axacrate.wms.enums.Role;
 
-
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
-// entity/User.java
 @Entity
 @Table(name = "app_user")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AppUser implements UserDetails {
+public class AppUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false)
+    @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "username", nullable = false, unique = true, length = 100)
     private String username;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "role", nullable = false, length = 20)
     private Role role;
 
-    // --- UserDetails methods ---
+    @OneToMany(mappedBy = "resolvedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Alert> resolvedAlerts = new ArrayList<>();
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 
-    @Override
-    public String getPassword() {
-        return passwordHash; // Spring Security reads this field for auth
+    public boolean isAdmin() {
+        return role == Role.ADMIN;
     }
 
-    @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isManager() {
+        return role == Role.MANAGER;
+    }
 
-    @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isWorker() {
+        return role == Role.WORKER;
+    }
 
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return true; }
+    public boolean hasManagerialAccess() {
+        return role == Role.ADMIN || role == Role.MANAGER;
+    }
 }
