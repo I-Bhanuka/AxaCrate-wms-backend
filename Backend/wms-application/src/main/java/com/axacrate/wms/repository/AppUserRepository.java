@@ -1,6 +1,8 @@
 package com.axacrate.wms.repository;
 
 import com.axacrate.wms.entity.AppUser;
+import com.axacrate.wms.enums.Role;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -39,7 +41,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
      * @param role - User role
      * @return List of users
      */
-    List<AppUser> findByRole(AppUser.UserRole role);
+    List<AppUser> findByRole(Role role);
 
     /**
      * Check if username already exists

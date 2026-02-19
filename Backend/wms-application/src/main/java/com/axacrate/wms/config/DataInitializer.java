@@ -148,7 +148,7 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
         admin.setPhoneNumber("0771234567");
         admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));  // Hash the password!
-        admin.setRole(AppUser.UserRole.ADMIN);
+        //admin.setRole(AppUser.Role.ADMIN);
 
         appUserRepository.save(admin);
 

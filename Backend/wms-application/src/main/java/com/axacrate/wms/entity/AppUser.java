@@ -2,72 +2,74 @@ package com.axacrate.wms.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
-import java.util.ArrayList;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.axacrate.wms.enums.Role;
+
+
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+
+// entity/User.java
 @Entity
 @Table(name = "app_user")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AppUser {
+public class AppUser implements UserDetails {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
-    @Column(name = "id", updatable = false, nullable = false)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "first_name", nullable = false, length = 100)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 100)
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false, length = 20)
+    @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
-    @Column(name = "username", nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 20)
-    private UserRole role;
+    @Column(nullable = false)
+    private Role role;
 
-    @OneToMany(mappedBy = "resolvedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Alert> resolvedAlerts = new ArrayList<>();
+    // --- UserDetails methods ---
 
-    public String getFullName() {
-        return firstName + " " + lastName;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    public boolean isAdmin() {
-        return role == UserRole.ADMIN;
+    @Override
+    public String getPassword() {
+        return passwordHash; // Spring Security reads this field for auth
     }
 
-    public boolean isManager() {
-        return role == UserRole.MANAGER;
-    }
+    @Override
+    public boolean isAccountNonExpired() { return true; }
 
-    public boolean isWorker() {
-        return role == UserRole.WORKER;
-    }
+    @Override
+    public boolean isAccountNonLocked() { return true; }
 
-    public boolean hasManagerialAccess() {
-        return role == UserRole.ADMIN || role == UserRole.MANAGER;
-    }
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
 
-    public enum UserRole {
-        ADMIN,
-        MANAGER,
-        WORKER
-    }
+    @Override
+    public boolean isEnabled() { return true; }
 }
