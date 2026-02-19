@@ -28,4 +28,7 @@ public class InventoryItemRequestDTO {
 
     @NotNull(message = "RFID Tag is required")
     private String rfidTag; // RFID tag associated with the inventory item
+
+    @NotNull(message = "Zone name is required")
+    private String zoneName; // The type of zone where the item will be stored
 }
