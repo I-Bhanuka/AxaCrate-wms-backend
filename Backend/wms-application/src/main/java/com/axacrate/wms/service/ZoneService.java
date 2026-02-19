@@ -10,8 +10,10 @@ import com.axacrate.wms.repository.ZoneRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.axacrate.wms.exception.ResourceNotFoundException;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -69,6 +71,16 @@ public class ZoneService {
         return zones.stream()
                 .map(this::mapToResponseDTO)
                 .toList();
+    }
+
+    // Retrieving the zone by the Zone ID
+    public ZoneResponseDTO getZoneById(UUID zoneId) {
+        // Throwing an exception if not the zone is not found using ID
+        Zone zone = zoneRepository.findById(zoneId)
+                .orElseThrow(() -> new ResourceNotFoundException("Zone not found with ID: " + zoneId));
+
+        // Mapping the zone entity to the DTO
+        return mapToResponseDTO(zone);
     }
 
     // Mapper to map the zone entity to the ZoneResponseDTO
