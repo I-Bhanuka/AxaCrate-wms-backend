@@ -2,43 +2,48 @@ package com.axacrate.wms.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Security Configuration
- *
- * TEMPORARY: This configuration DISABLES security for initial testing
- * Later, Member 1 will replace this with proper JWT authentication
- *
- * Current behavior: All endpoints are accessible without authentication
- */
-@Configuration // Enables Spring Security
+import com.axacrate.wms.security.JwtFilter;
+
+import lombok.RequiredArgsConstructor;
+
+@Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+    private final JwtFilter jwtFilter;
+    private final AuthenticationProvider authenticationProvider;
 
-    /**
-     * Security Filter Chain
-     *
-     * This configuration:
-     * - Disables CSRF (Cross-Site Request Forgery) protection
-     * - Allows ALL requests without authentication
-     *
-     * WARNING: Only for development/testing!
-     * Member 1 will implement proper JWT security later
-     *
-     * @param http - HttpSecurity object to configure
-     * @return Configured SecurityFilterChain
-     * @throws Exception if configuration fails
-     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http
-                .csrf(csrf -> csrf.disable())  // Disable CSRF for testing
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()  // Allow all requests (no authentication needed)
-                );
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authenticationProvider(authenticationProvider)
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

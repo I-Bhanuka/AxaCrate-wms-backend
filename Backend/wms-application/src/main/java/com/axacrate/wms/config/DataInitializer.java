@@ -1,6 +1,7 @@
 package com.axacrate.wms.config;
 
 import com.axacrate.wms.entity.*;
+import com.axacrate.wms.enums.Role;
 import com.axacrate.wms.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -162,11 +163,11 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
 
         AppUser admin = new AppUser();
         admin.setFirstName("System");
-        admin.setLastName("Administrator");
-        admin.setPhoneNumber("0771234567");
+        admin.setLastName("Admin");
+        admin.setPhoneNumber("0000000000");
         admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));  // Hash the password!
-        admin.setRole(AppUser.UserRole.ADMIN);
+        admin.setRole(Role.ADMIN);
 
         appUserRepository.save(admin);
 
