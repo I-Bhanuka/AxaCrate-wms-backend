@@ -14,20 +14,5 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration // Tells Spring: "This class configures beans"
 public class BeanConfig {
 
-    /**
-     * Password Encoder Bean
-     * Uses BCrypt algorithm to hash passwords
-     *
-     * Example:
-     * String plainPassword = "admin123";
-     * String hashed = passwordEncoder.encode(plainPassword);
-     * // Result: "$2a$10$N9qo8uL..."
-     *
-     * @return BCryptPasswordEncoder instance
-     */
-    @Bean // Tells Spring: "Create this object and make it available everywhere"
-    public PasswordEncoder passwordEncoder() {
-        // This method is used to hash passwords. So we don't store plain text passwords
-        return new BCryptPasswordEncoder(); // Kind of a hashing algorithm
-    }
+    
 }

@@ -136,7 +136,7 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
      */
     private void initializeAdminUser() {
         // Check if admin already exists
-        if (appUserRepository.existsByUsername("pulindu000")) {
+        if (appUserRepository.existsByUsername("admin")) {
             log.info("✓ Admin user already exists. Skipping creation.");
             return;
         }
@@ -144,18 +144,18 @@ public class DataInitializer implements CommandLineRunner { // CommandLineRunner
         log.info("Creating admin user...");
 
         AppUser admin = new AppUser();
-        admin.setFirstName("pulindu");
-        admin.setLastName("vidmal");
-        admin.setPhoneNumber("0779240380");
-        admin.setUsername("pulindu000");
+        admin.setFirstName("System");
+        admin.setLastName("Admin");
+        admin.setPhoneNumber("0000000000");
+        admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));  // Hash the password!
-        admin.setRole(Role.MANAGER);
+        admin.setRole(Role.ADMIN);
 
         appUserRepository.save(admin);
 
         log.info("✓ Created admin user");
         log.info("  Username: admin");
         log.info("  Password: admin123");
-        log.warn("  ⚠️  WARNING: Please change the default admin password in production!");
+        log.warn("  WARNING: Please change the default admin password in production!");
     }
 }

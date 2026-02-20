@@ -2,7 +2,6 @@ package com.axacrate.wms.security;
 
 import java.io.IOException;
 
-import org.springframework.boot.security.autoconfigure.SecurityProperties.User;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,6 +46,9 @@ public class JwtFilter extends OncePerRequestFilter {
                 
             }
         }
+
+        // IMPORTANT: continue the filter chain
+        filterChain.doFilter(request, response);
     }
 
 }
