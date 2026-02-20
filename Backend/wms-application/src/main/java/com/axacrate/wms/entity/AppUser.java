@@ -48,52 +48,35 @@ public class AppUser implements UserDetails {
     @Column(name = "role", nullable = false, length = 20)
     private Role role;
 
-    @Column(name = "active", nullable = false)
-    private boolean active;
-
-    @OneToMany(mappedBy = "resolvedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Alert> resolvedAlerts = new ArrayList<>();
-
-    public String getFullName() {
-        return firstName + " " + lastName;
-    }
-
-    public boolean isAdmin() {
-        return role == Role.ADMIN;
-    }
-
-    public boolean isManager() {
-        return role == Role.MANAGER;
-    }
-
-    public boolean isWorker() {
-        return role == Role.WORKER;
-    }
-
-    public boolean hasManagerialAccess() {
-        return role == Role.ADMIN || role == Role.MANAGER;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
-
+    public boolean isAccountNonExpired() {
+        return true;
+    }
     @Override
-    public boolean isAccountNonLocked() { return true; }
-
+    public boolean isAccountNonLocked() {
+        return true;
+    }
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
+    public boolean isCredentialsNonExpired() {
+        return true;  
+    }
     @Override
-    public boolean isEnabled() { return active; }
-
+    public boolean isEnabled() {
+        return true;
+    }
     @Override
-    public @Nullable String getPassword() {
+    public String getPassword() {
         return passwordHash;
     }
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    
 }
