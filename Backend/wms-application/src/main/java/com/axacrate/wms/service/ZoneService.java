@@ -83,6 +83,15 @@ public class ZoneService {
         return mapToResponseDTO(zone);
     }
 
+    // Retrieving the zone by the Zone name
+    public ZoneResponseDTO getZoneByName(String name) {
+
+        Zone zone = zoneRepository.findByNameIgnoreCase(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Zone not found with name: " + name));
+
+        return mapToResponseDTO(zone);
+    }
+
     // Mapper to map the zone entity to the ZoneResponseDTO
     private ZoneResponseDTO mapToResponseDTO(Zone zone) {
         Long itemCount = inventoryItemRepository.countItemsInZone(zone.getId());
@@ -101,6 +110,4 @@ public class ZoneService {
                 .hardwareStatus(zone.getHardwareStatus())
                 .build();
     }
-
-
 }
