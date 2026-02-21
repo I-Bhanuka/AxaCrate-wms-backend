@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/zone")
+@RequestMapping("/api/zones")
 @RequiredArgsConstructor
 public class ZoneController {
 
@@ -40,4 +40,13 @@ public class ZoneController {
         return ResponseEntity.ok(zone);
     }
 
+    // Retrieving a specific zone by its name
+    @GetMapping("/search")
+    public ResponseEntity<?> getZoneByName(@RequestParam(value = "name", required = false) String name) {
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body("Zone name is required to perform this search");
+        }
+        return ResponseEntity.ok(zoneService.getZoneByName(name));
+    }
 }
