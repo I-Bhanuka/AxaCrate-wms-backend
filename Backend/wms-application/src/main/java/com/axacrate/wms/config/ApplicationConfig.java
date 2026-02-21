@@ -18,24 +18,13 @@ public class ApplicationConfig {
 
     private final AppUserRepository appUserRepository;
 
-    /*
-     * @Bean
-     * public UserDetailsService userDetailsService() {
-     * return username -> appUserRepository.findByUsername(username)
-     * .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
-     * }
-     */
-
+    
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> appUserRepository.findByUsername(username)
-                .map(u -> User.builder()
-                        .username(u.getUsername())
-                        .password(u.getPasswordHash())
-                        .roles(u.getRole().name())
-                        .build())
-                .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
+     return username -> appUserRepository.findByUsername(username)
+     .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
     }
+    
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
