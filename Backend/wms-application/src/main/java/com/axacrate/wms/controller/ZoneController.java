@@ -2,6 +2,7 @@ package com.axacrate.wms.controller;
 
 import com.axacrate.wms.dto.ZoneCreateDTO;
 import com.axacrate.wms.dto.ZoneResponseDTO;
+import com.axacrate.wms.dto.ZoneUpdateDTO;
 import com.axacrate.wms.service.ZoneService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,5 +49,15 @@ public class ZoneController {
                     .body("Zone name is required to perform this search");
         }
         return ResponseEntity.ok(zoneService.getZoneByName(name));
+    }
+
+    // Retrieving a specific zone by its name and then updating the information
+    @PatchMapping("/{id}")
+    public ResponseEntity<ZoneResponseDTO> updateZone(
+            @PathVariable UUID id,
+            @RequestBody ZoneUpdateDTO dto) {
+
+        ZoneResponseDTO updatedZone = zoneService.updateZone(id, dto);
+        return ResponseEntity.ok(updatedZone);
     }
 }
