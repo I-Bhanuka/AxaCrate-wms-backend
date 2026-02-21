@@ -60,5 +60,16 @@ public class InventoryController {
                 ApiResponse.success(items,"Inventory items retrieved successfully").getData()
         );
     }
-    // Other endpoints like update, delete, get can be added similarly
+
+    @GetMapping("/dashboard") // GET /api/inventory/dashboard for getting inventory summary for dashboard
+    public ResponseEntity<ApiResponse<InventoryDashboardDTO>>getDashboard() {
+
+         //Delegate to service to get dashboard summary
+         InventoryDashboardDTO dashboard = inventoryService.getDashboardSummary();
+
+         //Return response with dashboard data
+        return ResponseEntity.ok(
+                ApiResponse.success(dashboard, "Inventory dashboard summary retrieved successfully")
+        );
+    }
 }

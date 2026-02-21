@@ -2,6 +2,7 @@ package com.axacrate.wms.service;
 
 import com.axacrate.wms.dto.InventoryItemRequestDTO;
 import com.axacrate.wms.dto.InventoryItemResponseDTO;
+import com.axacrate.wms.dto.InventoryDashboardDTO;
 import com.axacrate.wms.entity.InventoryItem;
 import com.axacrate.wms.entity.RfidTag;
 import com.axacrate.wms.entity.Zone;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -170,4 +172,57 @@ public class InventoryService {
 
     }
 
+    @Transactional(readOnly = true)
+    public InventoryDashboardDTO getDashboardSummary() {
+        log.info("Fetching inventory dashboard summary");
+
+        // Get all inventory items
+        List<InventoryItem> allItems = inventoryItemRepo.findAll();
+
+        // Calculate total items count
+        long totalItems = allItems.size();
+        log.info("Total items in inventory: {}", totalItems);
+
+        // Calculate total quantity
+        long totalQuantity = allItems.stream()
+                .mapToLong(InventoryItem::getQuantity)
+                .sum();
+        log.info("Total quantity in inventory: {}", totalQuantity);
+
+        // Count low stock items (threshold = 5, adjust as needed)
+        int lowStockThreshold = 5;
+        long lowStockCount = allItems.stream()
+                .filter(item -> item.getQuantity() < lowStockThreshold)
+                .count();
+        log.info("Low stock items count: {}", lowStockCount);
+
+        // Group items by zone
+        Map<String, Long> itemsByZone = allItems.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        InventoryItem::getCurrentZoneName,
+                        java.util.stream.Collectors.counting()
+                ));
+        log.info("Items grouped by zone: {}", itemsByZone);
+
+        // Get recent items (last 5 items, sorted by creation date)
+        List<InventoryItemResponseDTO> recentItems = allItems.stream()
+                .sorted((a, b) -> b.getId().compareTo(a.getId())) // Simple sort by ID (assuming ID is generated in order)
+                .limit(5)
+                .map(item -> InventoryItemResponseDTO.builder()
+                        .sku(item.getSku())
+                        .name(item.getName())
+                        .quantity(item.getQuantity())
+                        .build())
+                .toList();
+        log.info("Retrieved {} recent items", recentItems.size());
+
+        // Build and return DTO
+        return InventoryDashboardDTO.builder()
+                .totalItems(totalItems)
+                .totaQuantity(totalQuantity)
+                .lowStockCount(lowStockCount)
+                .itemsByZone(itemsByZone)
+                .recentItems(recentItems)
+                .build();
+    }
 }
