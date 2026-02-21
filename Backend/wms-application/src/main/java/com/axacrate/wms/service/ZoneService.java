@@ -2,6 +2,7 @@ package com.axacrate.wms.service;
 
 import com.axacrate.wms.dto.ZoneCreateDTO;
 import com.axacrate.wms.dto.ZoneResponseDTO;
+import com.axacrate.wms.dto.ZoneUpdateDTO;
 import com.axacrate.wms.entity.Warehouse;
 import com.axacrate.wms.entity.Zone;
 import com.axacrate.wms.repository.InventoryItemRepository;
@@ -88,6 +89,59 @@ public class ZoneService {
 
         Zone zone = zoneRepository.findByNameIgnoreCase(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with name: " + name));
+
+        return mapToResponseDTO(zone);
+    }
+
+    // Updating  zone related information
+    @Transactional
+    public ZoneResponseDTO updateZone(UUID zoneId, ZoneUpdateDTO dto) {
+
+        Zone zone = zoneRepository.findById(zoneId)
+                .orElseThrow(() -> new ResourceNotFoundException("Zone not found with ID: " + zoneId));
+
+        boolean updated = false;
+
+        // Update name
+        if (dto.getName() != null && !dto.getName().isBlank()) {
+            zoneRepository.findByNameAndWarehouseId(dto.getName(), zone.getWarehouse().getId())
+                    .ifPresent(existingZone -> {
+                        if (!existingZone.getId().equals(zoneId)) {
+                            throw new IllegalArgumentException(
+                                    "Zone with name '" + dto.getName() + "' already exists.");
+                        }
+                    });
+
+            zone.setName(dto.getName());
+            updated = true;
+        }
+
+        // Update capacity
+        if (dto.getCapacity() != null) {
+            Long currentItems = inventoryItemRepository.countItemsInZone(zone.getId());
+            int items = currentItems != null ? currentItems.intValue() : 0;
+            if (dto.getCapacity() < items) {
+                throw new IllegalArgumentException(
+                        "Capacity cannot be less than current item count: " + items);
+            }
+            zone.setCapacity(dto.getCapacity());
+            updated = true;
+        }
+
+        // Update status
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            try {
+                Zone.ZoneStatus newStatus = Zone.ZoneStatus.valueOf(dto.getStatus().toUpperCase());
+                zone.setStatus(newStatus);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Invalid zone status: " + dto.getStatus());
+            }
+            updated = true;
+        }
+
+        if (!updated) {
+            throw new IllegalArgumentException("No fields provided for update.");
+        }
 
         return mapToResponseDTO(zone);
     }
