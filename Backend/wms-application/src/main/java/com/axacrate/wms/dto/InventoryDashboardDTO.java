@@ -23,7 +23,7 @@ import java.util.Map;
 @Builder
 public class InventoryDashboardDTO {
     private long totalItems; // Total number of items in inventory
-    private long totaQuantity; // Total quantity of all items in inventory
+    private long totalQuantity; // Total quantity of all items in inventory
     private long lowStockCount; // Number of items below low stock threshold
     private Map<String, Long> itemsByZone; // Map of zone name to number of items in that zone
     private List<InventoryItemResponseDTO> recentItems; // List of recently added items
