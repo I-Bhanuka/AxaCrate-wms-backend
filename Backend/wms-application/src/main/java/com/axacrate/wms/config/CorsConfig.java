@@ -39,7 +39,7 @@ public class CorsConfig {
 
         // Allow these origins (frontends) to access backend
         config.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:3000",     // React development server
+                "http://localhost:5173",     // React development server
                 "http://localhost:8080",     // Backend
                 "http://192.168.*.*"         // ESP32 devices on local network
         ));
