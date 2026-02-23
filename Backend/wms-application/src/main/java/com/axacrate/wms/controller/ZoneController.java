@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,14 +21,14 @@ public class ZoneController {
     private final ZoneService zoneService;
 
     // Creates a new zone in the system
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<ZoneResponseDTO> createZone(@Valid @RequestBody ZoneCreateDTO dto) {
         ZoneResponseDTO createdZone = zoneService.createZone(dto);
         return new ResponseEntity<>(createdZone, HttpStatus.CREATED);
     }
 
     // Getting all the zones in the database
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<List<ZoneResponseDTO>> getAllZones() {
         return ResponseEntity.ok(zoneService.getAllZones());
     }
@@ -42,12 +41,8 @@ public class ZoneController {
     }
 
     // Retrieving a specific zone by its name
-    @GetMapping("/search")
-    public ResponseEntity<?> getZoneByName(@RequestParam(value = "name", required = false) String name) {
-        if (name == null || name.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body("Zone name is required to perform this search");
-        }
+    @GetMapping("/name/{name}")
+    public ResponseEntity<ZoneResponseDTO> getZoneByName(@PathVariable String name) {
         return ResponseEntity.ok(zoneService.getZoneByName(name));
     }
 
@@ -58,6 +53,18 @@ public class ZoneController {
             @RequestBody ZoneUpdateDTO dto) {
 
         ZoneResponseDTO updatedZone = zoneService.updateZone(id, dto);
+        return ResponseEntity.ok(updatedZone);
+    }
+
+    // Updating the zone related details
+    @PatchMapping("/warehouse/{warehouseName}/name/{name}")
+    public ResponseEntity<ZoneResponseDTO> updateZoneByWarehouseAndName(
+            @PathVariable String warehouseName,
+            @PathVariable String name,
+            @RequestBody ZoneUpdateDTO dto) {
+
+        ZoneResponseDTO updatedZone =
+                zoneService.updateZoneByWarehouseAndName(warehouseName, name, dto);
         return ResponseEntity.ok(updatedZone);
     }
 }
