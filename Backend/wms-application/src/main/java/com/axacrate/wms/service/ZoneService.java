@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.axacrate.wms.exception.ResourceNotFoundException;
 
+import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ZoneService {
@@ -30,9 +32,8 @@ public class ZoneService {
 
         // Checking if the warehouse exists
         Warehouse warehouse = warehouseRepository.findByName(dto.getWarehouseName())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Warehouse not found: " + dto.getWarehouseName())
-                );
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Warehouse not found: " + dto.getWarehouseName()));
 
         // Checking is the zone name already exists in the warehouse
         zoneRepository.findByNameAndWarehouseId(dto.getName(), warehouse.getId())
@@ -46,7 +47,9 @@ public class ZoneService {
         Zone.ZoneType zoneTypeEnum = Zone.ZoneType.valueOf(dto.getZoneType());
 
         // Convert status from DTO
-        Zone.ZoneStatus statusEnum = "INACTIVE".equalsIgnoreCase(dto.getStatus()) ? Zone.ZoneStatus.INACTIVE : Zone.ZoneStatus.ACTIVE;
+        Zone.ZoneStatus statusEnum = (dto.getStatus() == null || dto.getStatus().isBlank())
+                ? Zone.ZoneStatus.ACTIVE
+                : Zone.ZoneStatus.valueOf(dto.getStatus().toUpperCase());
 
         // Build zone entity
         Zone zone = Zone.builder()
@@ -60,6 +63,8 @@ public class ZoneService {
         // Save zone
         Zone savedZone = zoneRepository.save(zone);
 
+        log.info("Zone created with ID: {} and name: {} in warehouse: {}", savedZone.getId(), savedZone.getName(), warehouse.getName());
+
         // Return response DTO
         return mapToResponseDTO(savedZone);
     }
@@ -68,6 +73,8 @@ public class ZoneService {
     public List<ZoneResponseDTO> getAllZones() {
 
         List<Zone> zones = zoneRepository.findAll();
+
+        log.info("Retrieved {} zones from the database", zones.size());
 
         return zones.stream()
                 .map(this::mapToResponseDTO)
@@ -93,7 +100,7 @@ public class ZoneService {
         return mapToResponseDTO(zone);
     }
 
-    // Updating  zone related information
+    // Updating zone related information by using the Warehouse Name and the Zone Name as an identifier
     @Transactional
     public ZoneResponseDTO updateZone(UUID zoneId, ZoneUpdateDTO dto) {
 
@@ -146,6 +153,18 @@ public class ZoneService {
         return mapToResponseDTO(zone);
     }
 
+    // Updating zone related information by using the Warehouse Name and the Zone Name as an identifier
+    @Transactional
+    public ZoneResponseDTO updateZoneByWarehouseAndName(String warehouseName, String name, ZoneUpdateDTO dto) {
+        Zone zone = zoneRepository
+                .findByWarehouseNameIgnoreCaseAndNameIgnoreCase(warehouseName, name)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
+
+        // reuse your existing logic
+        return updateZone(zone.getId(), dto);
+    }
+
     // Mapper to map the zone entity to the ZoneResponseDTO
     private ZoneResponseDTO mapToResponseDTO(Zone zone) {
         Long itemCount = inventoryItemRepository.countItemsInZone(zone.getId());
@@ -164,4 +183,5 @@ public class ZoneService {
                 .hardwareStatus(zone.getHardwareStatus())
                 .build();
     }
+
 }

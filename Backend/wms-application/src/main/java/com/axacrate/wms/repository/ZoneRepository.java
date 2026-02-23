@@ -66,7 +66,7 @@ public interface ZoneRepository extends JpaRepository<Zone, UUID> {
                                           @Param("zoneType") Zone.ZoneType zoneType);
 
     /**
-     * Find a zone by the zone name
+     * Find a zone by the zone name (case-insensitive)
      * SQL: SELECT * FROM zone WHERE name = ?
      *
      * @param name - Zone name
@@ -83,5 +83,19 @@ public interface ZoneRepository extends JpaRepository<Zone, UUID> {
      * @return Optional containing zone if found
      */
     Optional<Zone> findByNameAndZoneType(String name, Zone.ZoneType zoneType);
+
+    /**
+     * Find a specific zone by warehouse name and zone name (case-insensitive).
+     * SQL: SELECT * FROM zone z
+     *      JOIN warehouse w ON z.warehouse_id = w.id
+     *      WHERE LOWER(w.name) = LOWER(?1)
+     *        AND LOWER(z.name) = LOWER(?2)
+     *
+     * @param warehouseName - Warehouse Name
+     * @param name - Zone Name
+     * @return Optional containing zone if found
+     */
+    Optional<Zone> findByWarehouseNameIgnoreCaseAndNameIgnoreCase(
+            String warehouseName, String name);
 
 }
