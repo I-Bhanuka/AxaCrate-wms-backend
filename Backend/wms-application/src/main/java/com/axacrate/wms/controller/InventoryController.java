@@ -41,7 +41,7 @@ public class InventoryController {
     }
 
     @GetMapping //GET /api/inventory for getting all inventory items
-    public ResponseEntity<Page<InventoryItemResponseDTO>> getAllItems(
+    public ResponseEntity<ApiResponse<Page<InventoryItemResponseDTO>>> getAllItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt, desc") String sort,
@@ -57,7 +57,7 @@ public class InventoryController {
         Page<InventoryItemResponseDTO> items = inventoryService.getAllItems(page, size, sort, zoneId, minQuantity, maxQuantity, status);
 
         return ResponseEntity.ok(
-                ApiResponse.success(items,"Inventory items retrieved successfully").getData()
+                ApiResponse.success(items,"Inventory items retrieved successfully")
         );
     }
 
