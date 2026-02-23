@@ -138,8 +138,14 @@ public class InventoryService {
         // Map entities to DTOs
         return items.map(item ->
                 InventoryItemResponseDTO.builder()
+                        .id(item.getId())
                         .sku(item.getSku())
                         .name(item.getName())
+                        .currentZoneName(item.getCurrentZoneName())
+                        .currentZoneId(item.getCurrentZone().getId())
+                        .rfidTagUid(item.getRfidTag() != null ? item.getRfidTag().getUid() : null)
+                        .rfidTagStatus(item.getRfidTag() != null ? item.getRfidTag().getStatus() : null)
+                        .createdAt(item.getCreatedAt())
                         .quantity(item.getQuantity())
                         .build());
     }
@@ -209,8 +215,14 @@ public class InventoryService {
                 .sorted((a, b) -> b.getId().compareTo(a.getId())) // Simple sort by ID (assuming ID is generated in order)
                 .limit(5)
                 .map(item -> InventoryItemResponseDTO.builder()
+                        .id(item.getId())
                         .sku(item.getSku())
                         .name(item.getName())
+                        .currentZoneName(item.getCurrentZoneName())
+                        .currentZoneId(item.getCurrentZone().getId())
+                        .rfidTagUid(item.getRfidTag() != null ? item.getRfidTag().getUid() : null)
+                        .rfidTagStatus(item.getRfidTag() != null ? item.getRfidTag().getStatus() : null)
+                        .createdAt(item.getCreatedAt())
                         .quantity(item.getQuantity())
                         .build())
                 .toList();
@@ -219,7 +231,7 @@ public class InventoryService {
         // Build and return DTO
         return InventoryDashboardDTO.builder()
                 .totalItems(totalItems)
-                .totaQuantity(totalQuantity)
+                .totalQuantity(totalQuantity)
                 .lowStockCount(lowStockCount)
                 .itemsByZone(itemsByZone)
                 .recentItems(recentItems)

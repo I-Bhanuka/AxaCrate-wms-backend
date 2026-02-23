@@ -1,7 +1,9 @@
 package com.axacrate.wms.dto;
 
+import com.axacrate.wms.entity.RfidTag;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -18,6 +20,7 @@ public class InventoryItemResponseDTO {
     private Integer quantity;
     private String currentZoneName;
     private UUID currentZoneId;
-    private String rfidTagEpc;
-    private String rfidTagStatus;
+    private String rfidTagUid;
+    private RfidTag.RfidStatus rfidTagStatus;
+    private LocalDateTime createdAt;
 }
