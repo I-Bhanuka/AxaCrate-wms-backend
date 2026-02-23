@@ -2,8 +2,10 @@ package com.axacrate.wms.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -35,6 +37,10 @@ public class InventoryItem {
 
     @OneToOne(mappedBy = "inventoryItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private RfidTag rfidTag;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     public boolean isInZone() {
         return currentZone != null;
