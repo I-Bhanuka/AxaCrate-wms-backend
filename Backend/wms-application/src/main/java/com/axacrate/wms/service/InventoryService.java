@@ -237,4 +237,24 @@ public class InventoryService {
                 .recentItems(recentItems)
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public InventoryItemResponseDTO getItemById(UUID id) {
+        log.info("Fetching inventory item by ID: {}", id);
+        InventoryItem item = inventoryItemRepo.findById(id).orElseThrow(() ->
+                new ResourceNotFoundException("Inventory item not found"));
+        log.info("Inventory item found: {}", item.getName());
+        return InventoryItemResponseDTO.builder()
+                .id(item.getId())
+                .sku(item.getSku())
+                .name(item.getName())
+                .currentZoneName(item.getCurrentZoneName())
+                .currentZoneId(item.getCurrentZone().getId())
+                .rfidTagUid(item.getRfidTag() != null ? item.getRfidTag().getUid() : null)
+                .rfidTagStatus(item.getRfidTag() != null ? item.getRfidTag().getStatus() : null)
+                .createdAt(item.getCreatedAt())
+                .quantity(item.getQuantity())
+                .build();
+
+    }
 }
