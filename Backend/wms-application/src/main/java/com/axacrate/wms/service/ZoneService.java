@@ -87,6 +87,8 @@ public class ZoneService {
         Zone zone = zoneRepository.findById(zoneId)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with ID: " + zoneId));
 
+        log.info("Retrieved zone with ID: {}", zoneId);
+
         // Mapping the zone entity to the DTO
         return mapToResponseDTO(zone);
     }
@@ -96,6 +98,8 @@ public class ZoneService {
 
         Zone zone = zoneRepository.findByNameIgnoreCase(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with name: " + name));
+
+        log.info("Retrieved zone with name: {}", name);
 
         return mapToResponseDTO(zone);
     }
@@ -150,6 +154,8 @@ public class ZoneService {
             throw new IllegalArgumentException("No fields provided for update.");
         }
 
+        log.info("Zone updated with ID: {}", zoneId);
+
         return mapToResponseDTO(zone);
     }
 
@@ -161,7 +167,9 @@ public class ZoneService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
 
-        // reuse your existing logic
+        log.info("Updating zone: {} in warehouse: {}", name, warehouseName);
+
+        // Reusing the existing logic from updateZone method
         return updateZone(zone.getId(), dto);
     }
 
