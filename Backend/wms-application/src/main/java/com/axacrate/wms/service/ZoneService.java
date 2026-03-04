@@ -217,4 +217,24 @@ public class ZoneService {
 
         return mapToResponseDTO(zone);
     }
+
+    // Enabling a zone using the warehouse name and zone name
+    @Transactional
+    public ZoneResponseDTO enableZoneByWarehouseAndName(String warehouseName, String name) {
+        Zone zone = zoneRepository
+                .findByWarehouseNameIgnoreCaseAndNameIgnoreCase(warehouseName, name)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
+
+        if (zone.getStatus() == Zone.ZoneStatus.ACTIVE) {
+            log.warn("Attempt to enable already active zone: {} in warehouse: {}", name, warehouseName);
+            throw new IllegalArgumentException("Zone is already active.");
+        }
+
+        zone.setStatus(Zone.ZoneStatus.ACTIVE);
+
+        log.info("Zone '{}' in warehouse '{}' has been enabled", name, warehouseName);
+
+        return mapToResponseDTO(zone);
+    }
 }
