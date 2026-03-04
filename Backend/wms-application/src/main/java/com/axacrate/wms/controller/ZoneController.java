@@ -1,5 +1,6 @@
 package com.axacrate.wms.controller;
 
+import com.axacrate.wms.dto.ApiResponse;
 import com.axacrate.wms.dto.ZoneCreateDTO;
 import com.axacrate.wms.dto.ZoneResponseDTO;
 import com.axacrate.wms.dto.ZoneUpdateDTO;
@@ -22,49 +23,62 @@ public class ZoneController {
 
     // Creates a new zone in the system
     @PostMapping
-    public ResponseEntity<ZoneResponseDTO> createZone(@Valid @RequestBody ZoneCreateDTO dto) {
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> createZone(@Valid @RequestBody ZoneCreateDTO dto) {
         ZoneResponseDTO createdZone = zoneService.createZone(dto);
-        return new ResponseEntity<>(createdZone, HttpStatus.CREATED);
+        return new ResponseEntity<>(
+                ApiResponse.success(createdZone, "Zone created successfully"),
+                HttpStatus.CREATED
+        );
     }
 
     // Getting all the zones in the database
     @GetMapping
-    public ResponseEntity<List<ZoneResponseDTO>> getAllZones() {
-        return ResponseEntity.ok(zoneService.getAllZones());
+    public ResponseEntity<ApiResponse<List<ZoneResponseDTO>>> getAllZones() {
+        List<ZoneResponseDTO> zones = zoneService.getAllZones();
+        return ResponseEntity.ok(
+                ApiResponse.success(zones, "Zones retrieved successfully")
+        );
     }
 
     // Retrieving a specific zone by its ID
     @GetMapping("/{id}")
-    public ResponseEntity<ZoneResponseDTO> getZoneById(@PathVariable("id") UUID id) {
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> getZoneById(@PathVariable("id") UUID id) {
         ZoneResponseDTO zone = zoneService.getZoneById(id);
-        return ResponseEntity.ok(zone);
+        return ResponseEntity.ok(
+                ApiResponse.success(zone, "Zone retrieved successfully")
+        );
     }
 
     // Retrieving a specific zone by its name
     @GetMapping("/name/{name}")
-    public ResponseEntity<ZoneResponseDTO> getZoneByName(@PathVariable String name) {
-        return ResponseEntity.ok(zoneService.getZoneByName(name));
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> getZoneByName(@PathVariable String name) {
+        ZoneResponseDTO zone = zoneService.getZoneByName(name);
+        return ResponseEntity.ok(
+                ApiResponse.success(zone, "Zone retrieved successfully")
+        );
     }
 
-    // Retrieving a specific zone by its name and then updating the information
+    // Retrieving a specific zone by its id and then updating the information
     @PatchMapping("/{id}")
-    public ResponseEntity<ZoneResponseDTO> updateZone(
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> updateZone(
             @PathVariable UUID id,
             @RequestBody ZoneUpdateDTO dto) {
-
         ZoneResponseDTO updatedZone = zoneService.updateZone(id, dto);
-        return ResponseEntity.ok(updatedZone);
+        return ResponseEntity.ok(
+                ApiResponse.success(updatedZone, "Zone updated successfully")
+        );
     }
 
     // Updating the zone related details
     @PatchMapping("/warehouse/{warehouseName}/name/{name}")
-    public ResponseEntity<ZoneResponseDTO> updateZoneByWarehouseAndName(
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> updateZoneByWarehouseAndName(
             @PathVariable String warehouseName,
             @PathVariable String name,
             @RequestBody ZoneUpdateDTO dto) {
-
         ZoneResponseDTO updatedZone =
                 zoneService.updateZoneByWarehouseAndName(warehouseName, name, dto);
-        return ResponseEntity.ok(updatedZone);
+        return ResponseEntity.ok(
+                ApiResponse.success(updatedZone, "Zone updated successfully")
+        );
     }
 }
