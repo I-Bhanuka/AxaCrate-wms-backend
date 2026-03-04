@@ -243,7 +243,7 @@ public class InventoryService {
         log.info("Fetching inventory item by ID: {}", id);
         InventoryItem item = inventoryItemRepo.findById(id).orElseThrow(() ->
                 new ResourceNotFoundException("Inventory item not found"));
-        log.info("Inventory item found: {}", item.getName());
+        log.info("Inventory item found by ID: {}", item.getName());
         return InventoryItemResponseDTO.builder()
                 .id(item.getId())
                 .sku(item.getSku())
@@ -256,5 +256,24 @@ public class InventoryService {
                 .quantity(item.getQuantity())
                 .build();
 
+    }
+
+    @Transactional(readOnly = true)
+    public InventoryItemResponseDTO getItemBySku(String sku) {
+        log.info("Fetching inventory item by SKU: {}", sku);
+        InventoryItem item = inventoryItemRepo.findBySku(sku).orElseThrow(() ->
+                new ResourceNotFoundException("Inventory item not found"));
+        log.info("Inventory item found by sku: {}", item.getName());
+        return InventoryItemResponseDTO.builder()
+                .id(item.getId())
+                .sku(item.getSku())
+                .name(item.getName())
+                .currentZoneName(item.getCurrentZoneName())
+                .currentZoneId(item.getCurrentZone().getId())
+                .rfidTagUid(item.getRfidTag() != null ? item.getRfidTag().getUid() : null)
+                .rfidTagStatus(item.getRfidTag() != null ? item.getRfidTag().getStatus() : null)
+                .createdAt(item.getCreatedAt())
+                .quantity(item.getQuantity())
+                .build();
     }
 }
