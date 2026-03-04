@@ -81,4 +81,15 @@ public class ZoneController {
                 ApiResponse.success(updatedZone, "Zone updated successfully")
         );
     }
+
+    // Disabling a zone by the warehouse name and zone name
+    @PatchMapping("/warehouse/{warehouseName}/name/{name}/disable")
+    public ResponseEntity<ApiResponse<ZoneResponseDTO>> disableZone(
+            @PathVariable String warehouseName,
+            @PathVariable String name) {
+        ZoneResponseDTO zone = zoneService.disableZoneByWarehouseAndName(warehouseName, name);
+        return ResponseEntity.ok(
+                ApiResponse.success(zone, "Zone disabled successfully")
+        );
+    }
 }
