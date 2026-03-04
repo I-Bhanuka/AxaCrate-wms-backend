@@ -192,4 +192,29 @@ public class ZoneService {
                 .build();
     }
 
+    // Disabling a zone using the warehouse name and zone name
+    @Transactional
+    public ZoneResponseDTO disableZoneByWarehouseAndName(String warehouseName, String name) {
+        Zone zone = zoneRepository
+                .findByWarehouseNameIgnoreCaseAndNameIgnoreCase(warehouseName, name)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
+
+        if (zone.getStatus() == Zone.ZoneStatus.INACTIVE) {
+            log.warn("Attempt to disable already inactive zone: {} in warehouse: {}", name, warehouseName);
+            throw new IllegalArgumentException("Zone is already disabled.");
+        }
+
+        Long itemCount = inventoryItemRepository.countItemsInZone(zone.getId());
+        if (itemCount != null && itemCount > 0) {
+            throw new IllegalArgumentException(
+                    "Cannot disable zone with " + itemCount + " active inventory items.");
+        }
+
+        zone.setStatus(Zone.ZoneStatus.INACTIVE);
+
+        log.info("Zone '{}' in warehouse '{}' has been disabled", name, warehouseName);
+
+        return mapToResponseDTO(zone);
+    }
 }
