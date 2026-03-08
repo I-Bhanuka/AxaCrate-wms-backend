@@ -87,6 +87,8 @@ public class ZoneService {
         Zone zone = zoneRepository.findById(zoneId)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with ID: " + zoneId));
 
+        log.info("Retrieved zone with ID: {}", zoneId);
+
         // Mapping the zone entity to the DTO
         return mapToResponseDTO(zone);
     }
@@ -96,6 +98,8 @@ public class ZoneService {
 
         Zone zone = zoneRepository.findByNameIgnoreCase(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Zone not found with name: " + name));
+
+        log.info("Retrieved zone with name: {}", name);
 
         return mapToResponseDTO(zone);
     }
@@ -150,6 +154,8 @@ public class ZoneService {
             throw new IllegalArgumentException("No fields provided for update.");
         }
 
+        log.info("Zone updated with ID: {}", zoneId);
+
         return mapToResponseDTO(zone);
     }
 
@@ -161,7 +167,9 @@ public class ZoneService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
 
-        // reuse your existing logic
+        log.info("Updating zone: {} in warehouse: {}", name, warehouseName);
+
+        // Reusing the existing logic from updateZone method
         return updateZone(zone.getId(), dto);
     }
 
@@ -184,4 +192,49 @@ public class ZoneService {
                 .build();
     }
 
+    // Disabling a zone using the warehouse name and zone name
+    @Transactional
+    public ZoneResponseDTO disableZoneByWarehouseAndName(String warehouseName, String name) {
+        Zone zone = zoneRepository
+                .findByWarehouseNameIgnoreCaseAndNameIgnoreCase(warehouseName, name)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
+
+        if (zone.getStatus() == Zone.ZoneStatus.INACTIVE) {
+            log.warn("Attempt to disable already inactive zone: {} in warehouse: {}", name, warehouseName);
+            throw new IllegalArgumentException("Zone is already disabled.");
+        }
+
+        Long itemCount = inventoryItemRepository.countItemsInZone(zone.getId());
+        if (itemCount != null && itemCount > 0) {
+            throw new IllegalArgumentException(
+                    "Cannot disable zone with " + itemCount + " active inventory items.");
+        }
+
+        zone.setStatus(Zone.ZoneStatus.INACTIVE);
+
+        log.info("Zone '{}' in warehouse '{}' has been disabled", name, warehouseName);
+
+        return mapToResponseDTO(zone);
+    }
+
+    // Enabling a zone using the warehouse name and zone name
+    @Transactional
+    public ZoneResponseDTO enableZoneByWarehouseAndName(String warehouseName, String name) {
+        Zone zone = zoneRepository
+                .findByWarehouseNameIgnoreCaseAndNameIgnoreCase(warehouseName, name)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Zone '" + name + "' not found in warehouse '" + warehouseName + "'"));
+
+        if (zone.getStatus() == Zone.ZoneStatus.ACTIVE) {
+            log.warn("Attempt to enable already active zone: {} in warehouse: {}", name, warehouseName);
+            throw new IllegalArgumentException("Zone is already active.");
+        }
+
+        zone.setStatus(Zone.ZoneStatus.ACTIVE);
+
+        log.info("Zone '{}' in warehouse '{}' has been enabled", name, warehouseName);
+
+        return mapToResponseDTO(zone);
+    }
 }

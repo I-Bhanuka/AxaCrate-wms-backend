@@ -5,10 +5,7 @@ import com.axacrate.wms.dto.RfidWriteScanResponseDTO;
 import com.axacrate.wms.exception.ResourceNotFoundException;
 
 import com.axacrate.wms.entity.*;
-import com.axacrate.wms.repository.MovementLogRepository;
-import com.axacrate.wms.repository.RfidHardwareRepository;
-import com.axacrate.wms.repository.RfidTagRepository;
-import com.axacrate.wms.repository.ZoneRepository;
+import com.axacrate.wms.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +23,7 @@ public class RfidService {
     private final MovementLogRepository movementLogRepository;
     private final ZoneRepository zoneRepository;
     private final RfidHardwareRepository hardwareRepository;
+    private final InventoryItemRepository inventoryItemRepository;
 
     Deque<RfidWriteScanResponseDTO> latestScans;
 
@@ -33,12 +31,14 @@ public class RfidService {
     public RfidService(RfidTagRepository rfidTagRepository,
                        MovementLogRepository movementLogRepository,
                        ZoneRepository zoneRepository,
-                       RfidHardwareRepository hardwareRepository) {
+                       RfidHardwareRepository hardwareRepository,
+                       InventoryItemRepository inventoryItemRepository) {
         // Injecting repositories through constructor injection. Spring will automatically provide the implementations at runtime.
         this.rfidTagRepository = rfidTagRepository;
         this.movementLogRepository = movementLogRepository;
         this.zoneRepository = zoneRepository;
         this.hardwareRepository = hardwareRepository;
+        this.inventoryItemRepository = inventoryItemRepository;
 
         this.latestScans = new ConcurrentLinkedDeque<>();;
     }
@@ -57,6 +57,54 @@ public class RfidService {
         // - validate movement
         // - log movement
         // - raise alerts
+
+        log.info("Read scan received from reader: {}, for tag: {}", request.getReaderId(), request.getTagId());
+
+        // Find the tag
+        RfidTag rfidTag = rfidTagRepository.findByUid(request.getTagId()).orElse(null);
+
+        // Find the item
+        InventoryItem item = rfidTag != null ? rfidTag.getInventoryItem() : null;
+
+        Zone readerZone = zoneRepository.findByNameIgnoreCase(request.getReaderId()).
+                orElseThrow(() -> new ResourceNotFoundException("Reader zone not found"));
+
+        if (rfidTag == null) {
+            log.warn("Tag not found for UID: {}. Read event ignored.", request.getTagId());
+            return; // Or you can choose to log this as an unregistered tag event
+        }
+
+        log.info("Tag found: {}. Processing read event.", rfidTag.getUid());
+
+        // Change the tag's last seen location and time
+        rfidTag.setLastSeenAt(LocalDateTime.now());
+        rfidTag.setLastSeenZone(readerZone);
+        rfidTagRepository.save(rfidTag);
+
+        // Create a movement log entry
+        MovementLog movementLog = MovementLog.builder()
+                .tag(rfidTag)
+                .fromZone(item.getCurrentZone())
+                .toZone(readerZone)
+                .hardware(hardwareCheck(request.getReaderId()))
+                .eventType(MovementLog.EventType.MOVEMENT)
+                .synced(false)
+                .build();
+
+        movementLogRepository.save(movementLog);
+        log.info("Movement event logged for tag: {}. From zone: {} to zone: {}.", rfidTag.getUid(), item.getCurrentZone() != null ? item.getCurrentZone().getName() : "UNASSIGNED", readerZone.getName());
+
+        // Change item's current zone if item is assigned to the tag
+        if (item != null) {
+            item.setCurrentZone(readerZone);
+            // Save the item entity if you have an inventory item repository
+            inventoryItemRepository.save(item);
+            log.info("Inventory item {} moved to zone {}.", item.getName(), readerZone.getName());
+        }
+
+
+
+
 
 
         // TODO:
@@ -109,7 +157,7 @@ public class RfidService {
         }
 
         // Build the response based on the tag status and inventory item assignment
-        RfidWriteScanResponseDTO response = buildWriteScanResponse(rfidTag);
+        RfidWriteScanResponseDTO response = buildWriteScanResponse(rfidTag, writerZone);
 
         // Cache the results for UI to retrieve via /write-latest endpoint
         latestScans.addLast(response);
@@ -173,7 +221,7 @@ public class RfidService {
         }
 
         // Check if hardware is operational
-         if (!hardware.isOperational()) {
+        if (!hardware.isOperational()) {
             log.error("Hardware {} is not operational. Event processing aborted.", readerName);
             return null;
         }
@@ -210,13 +258,13 @@ public class RfidService {
         movementLogRepository.save(log);
 
         // Update the last seen location and save the tag entity after logging the event
-         tag.setLastSeenAt(LocalDateTime.now());
-         tag.setLastSeenZone(zone);
-         rfidTagRepository.save(tag);
+        tag.setLastSeenAt(LocalDateTime.now());
+        tag.setLastSeenZone(zone);
+        rfidTagRepository.save(tag);
     }
 
     // HELPER: Build Write Scan Response
-    private RfidWriteScanResponseDTO buildWriteScanResponse(RfidTag tag) {
+    private RfidWriteScanResponseDTO buildWriteScanResponse(RfidTag tag, Zone writerZone) {
         RfidWriteScanResponseDTO.RfidWriteScanResponseDTOBuilder builder = RfidWriteScanResponseDTO.builder()
                 .tagUid(tag.getUid())
                 .tagStatus(tag.getStatus().toString());
@@ -226,6 +274,7 @@ public class RfidService {
                     .status("UNASSIGNED")
                     .message("Tag is unassigned. You can create a new inventory item.")
                     .allowEdit(true)
+                    .currentZone(writerZone.getName())
                     .build();
         } else {
             InventoryItem item = tag.getInventoryItem();
@@ -237,7 +286,7 @@ public class RfidService {
                     .sku(item.getSku())
                     .itemName(item.getName())
                     .quantity(item.getQuantity())
-                    .currentZone(item.getCurrentZoneName())
+                    .currentZone(writerZone.getName())
                     .build();
         }
     }

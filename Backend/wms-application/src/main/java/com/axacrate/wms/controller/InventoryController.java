@@ -72,4 +72,24 @@ public class InventoryController {
                 ApiResponse.success(dashboard, "Inventory dashboard summary retrieved successfully")
         );
     }
+
+    @GetMapping("/{id}") // GET /api/inventory/{id} for getting inventory item details by id
+    public ResponseEntity<ApiResponse<InventoryItemResponseDTO>> getItemById(@PathVariable UUID id) {
+
+        InventoryItemResponseDTO item = inventoryService.getItemById(id);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(item, "Inventory item details retrieved successfully")
+        );
+    }
+
+    @GetMapping("/sku/{sku}") // GET /api/inventory/sku/{sku} for getting inventory item details by SKU
+    public ResponseEntity<ApiResponse<InventoryItemResponseDTO>> getItemBySku(@PathVariable String sku) {
+
+        InventoryItemResponseDTO item = inventoryService.getItemBySku(sku);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(item, "Inventory item details retrieved successfully")
+        );
+     }
 }
