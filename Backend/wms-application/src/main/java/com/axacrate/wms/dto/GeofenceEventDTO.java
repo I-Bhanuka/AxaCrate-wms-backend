@@ -15,9 +15,10 @@ import java.util.UUID;
 @AllArgsConstructor
 
 public class GeofenceEventDTO {
-    private UUID id;
-    private String readerName;
+    private UUID hardwareId;
+    private String tagUid;
     private String direction;
+    private String readerName;
     private LocalDateTime timestamp;
 }
 
