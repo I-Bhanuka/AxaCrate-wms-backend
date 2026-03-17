@@ -101,4 +101,15 @@ public class InventoryController {
      }
 
 
+    @DeleteMapping("/{sku}") // DELETE /api/inventory/{sku} for deleting a specific inventory item by sku
+    public ResponseEntity<ApiResponse> deleteItemBySku(@PathVariable String sku) {
+
+        inventoryService.deleteItemBySku(sku);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Inventory item deleted successfully", null)
+        );
+    }
+
+
 }

@@ -318,4 +318,21 @@ public class InventoryService {
         return updatedFields;
     }
 
+    @Transactional
+    public void deleteItemBySku(String sku) {
+        log.info("Deleting inventory item by sku: {}", sku);
+        InventoryItem item = inventoryItemRepo.findBySku(sku)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+        log.info("Inventory item found to delete: {}", item.getName());
+        // Unassign RFID tag if assigned
+        if (item.getRfidTag() != null) {
+            RfidTag rfidTag = item.getRfidTag();
+            rfidTag.setInventoryItem(null); // Unassign the tag
+            rfidTagRepository.save(rfidTag); // Save the updated tag
+            log.info("Unassigned RFID tag: {}", rfidTag.getUid());
+        }
+        inventoryItemRepo.delete(item);
+        log.info("Inventory item deleted: {}", item.getName());
+    }
+
 }
