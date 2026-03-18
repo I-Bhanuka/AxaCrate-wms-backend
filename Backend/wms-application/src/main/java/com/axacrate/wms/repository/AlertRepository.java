@@ -1,6 +1,7 @@
 package com.axacrate.wms.repository;
 
 import com.axacrate.wms.entity.Alert;
+import com.axacrate.wms.entity.Zone;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -87,4 +88,21 @@ public interface AlertRepository extends JpaRepository<Alert, UUID> {
      */
     @Query("SELECT COUNT(a) FROM Alert a WHERE a.alertStatus = 'PENDING' AND a.severity = 'CRITICAL'")
     Long countCriticalPendingAlerts();
+
+    /**
+     * Find all alerts linked to a specific zone, newest first
+     *
+     * @param zone - Zone entity
+     * @return List of alerts for the zone
+     */
+    List<Alert> findByZoneOrderByCreatedAtDesc(Zone zone);
+
+    /**
+     * Find unresolved alerts for a specific zone
+     *
+     * @param zoneId - Zone UUID
+     * @return List of unresolved alerts for the zone
+     */
+    @Query("SELECT a FROM Alert a WHERE a.zone.id = :zoneId AND a.alertStatus != 'RESOLVED' ORDER BY a.severity DESC, a.createdAt DESC")
+    List<Alert> findUnresolvedByZoneId(@Param("zoneId") UUID zoneId);
 }
