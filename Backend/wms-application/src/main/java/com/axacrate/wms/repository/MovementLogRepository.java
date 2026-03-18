@@ -1,6 +1,7 @@
 package com.axacrate.wms.repository;
 
 import com.axacrate.wms.entity.MovementLog;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,11 +39,11 @@ public interface MovementLogRepository extends JpaRepository<MovementLog, UUID> 
         LEFT JOIN FETCH t.inventoryItem i
         LEFT JOIN FETCH m.fromZone
         LEFT JOIN FETCH m.toZone
-        WHERE m.eventType = 'MOVEMENT'
+        LEFT JOIN FETCH m.hardware
+        WHERE m.eventType = :eventType
         ORDER BY m.occurredAt DESC
-        LIMIT :limit
     """)
-    List<MovementLog> findRecentMovements(@Param("limit") int limit);
+    List<MovementLog> findRecentMovements(@Param("eventType") MovementLog.EventType eventType,Pageable pageable);
 
     /**
      * Find all movements for a tag, ordered by most recent first

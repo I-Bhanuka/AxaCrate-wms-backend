@@ -3,6 +3,7 @@ package com.axacrate.wms.service;
 import com.axacrate.wms.dto.InventoryItemRequestDTO;
 import com.axacrate.wms.dto.InventoryItemResponseDTO;
 import com.axacrate.wms.dto.InventoryDashboardDTO;
+import com.axacrate.wms.dto.InventoryUpdateRequestDTO;
 import com.axacrate.wms.entity.InventoryItem;
 import com.axacrate.wms.entity.RfidTag;
 import com.axacrate.wms.entity.Zone;
@@ -276,4 +277,62 @@ public class InventoryService {
                 .quantity(item.getQuantity())
                 .build();
     }
+
+    @Transactional
+    public InventoryUpdateRequestDTO updateItemBySku(String sku, InventoryUpdateRequestDTO requestDTO) {
+        boolean changed = false;
+        InventoryUpdateRequestDTO updatedFields = new InventoryUpdateRequestDTO();
+
+        log.info("Updating inventory item by sku: {}", sku);
+        InventoryItem item = inventoryItemRepo.findBySku(sku)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+        log.info("Inventory item found: {}", item.getName());
+
+        // Update fields
+        if (!requestDTO.getName().equals(item.getName())) {
+            log.info("Updating name from '{}' to '{}'", item.getName(), requestDTO.getName());
+            item.setName(requestDTO.getName());
+            updatedFields.setName(requestDTO.getName());
+            changed = true;
+        } else {
+            log.info("Name is the same, no update needed");
+        }
+
+        if (requestDTO.getQuantity() != item.getQuantity()) {
+            log.info("Updating quantity from '{}' to '{}'", item.getQuantity(), requestDTO.getQuantity());
+            item.setQuantity(requestDTO.getQuantity());
+            updatedFields.setQuantity(requestDTO.getQuantity());
+            changed = true;
+        } else {
+            log.info("Quantity is the same, no update needed");
+        }
+
+        // Save changes
+        if (changed) {
+            inventoryItemRepo.save(item);
+            log.info("Inventory item updated: {}", item.getName());
+        } else {
+            log.info("No changes detected, skipping update");
+        }
+
+        return updatedFields;
+    }
+
+    @Transactional
+    public void deleteItemBySku(String sku) {
+        log.info("Deleting inventory item by sku: {}", sku);
+        InventoryItem item = inventoryItemRepo.findBySku(sku)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory item not found"));
+        log.info("Inventory item found to delete: {}", item.getName());
+        // Unassign RFID tag if assigned
+        if (item.getRfidTag() != null) {
+            RfidTag rfidTag = item.getRfidTag();
+            rfidTag.setInventoryItem(null); // Unassign the tag
+            rfidTagRepository.save(rfidTag); // Save the updated tag
+            log.info("Unassigned RFID tag: {}", rfidTag.getUid());
+        }
+        inventoryItemRepo.delete(item);
+        log.info("Inventory item deleted: {}", item.getName());
+    }
+
 }

@@ -5,6 +5,8 @@ import com.axacrate.wms.entity.MovementLog;
 import com.axacrate.wms.repository.MovementLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +22,12 @@ public class MovementLogService {
     @Transactional(readOnly = true)
     public List<MovementLogResponseDTO> getRecentMovements(int limit) {
         // Cap limit to prevent abuse
-        int safeLimit = Math.min(limit, 100);
+        int safeLimit = Math.max(1, Math.min(limit, 100));
 
-        List<MovementLog> logs = movementLogRepository.findRecentMovements(safeLimit);
+        List<MovementLog> logs = movementLogRepository.findRecentMovements(
+                MovementLog.EventType.MOVEMENT,
+                PageRequest.of(0, safeLimit)
+        );
 
         log.info("Movement logs retrieved: {}", logs.size());
 
@@ -32,20 +37,19 @@ public class MovementLogService {
     }
 
     private MovementLogResponseDTO mapToDTO(MovementLog log) {
-        // Safely get item info through tag — tag or item might not exist
-        var tag  = log.getTag();
+        var tag = log.getTag();
         var item = tag != null ? tag.getInventoryItem() : null;
 
         return MovementLogResponseDTO.builder()
                 .id(log.getId())
+                .itemName(item != null ? item.getName() : null)
+                .itemSku(item != null ? item.getSku() : null)
                 .fromZoneName(log.getFromZone() != null ? log.getFromZone().getName() : null)
-                .toZoneName(log.getToZone()   != null ? log.getToZone().getName()   : null)
-                .eventType(log.getEventType().getValue())
+                .toZoneName(log.getToZone() != null ? log.getToZone().getName() : null)
+                .eventType(log.getEventType() != null ? log.getEventType().getValue() : null)
                 .occurredAt(log.getOccurredAt())
                 .hardwareType(log.getHardware() != null ? log.getHardware().getHardwareType() : null)
-                .synced(log.getSynced())
-                .itemSku(item != null ? item.getSku() : null)
-                .itemName(item != null ? item.getName() : null)
+                .synced(Boolean.TRUE.equals(log.getSynced()))
                 .build();
     }
 }

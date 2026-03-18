@@ -20,6 +20,10 @@ public class MovementLogController {
     public ResponseEntity<ApiResponse<List<MovementLogResponseDTO>>> getRecentMovements(
             @RequestParam(defaultValue = "20") int limit
     ) {
+        if (limit < 1) {
+            limit = 20;
+        }
+
         List<MovementLogResponseDTO> movements = movementLogService.getRecentMovements(limit);
 
         return ResponseEntity.ok(
