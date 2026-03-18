@@ -34,6 +34,13 @@ public class Alert {
     @Column(name = "alert_status", nullable = false, length = 50)
     private AlertStatus alertStatus;
 
+    @Column(name = "message", columnDefinition = "TEXT")
+    private String message;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private Zone zone;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
