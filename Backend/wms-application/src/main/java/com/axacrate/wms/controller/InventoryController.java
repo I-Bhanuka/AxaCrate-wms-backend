@@ -1,9 +1,6 @@
 package com.axacrate.wms.controller;
 
-import com.axacrate.wms.dto.ApiResponse;
-import com.axacrate.wms.dto.InventoryDashboardDTO;
-import com.axacrate.wms.dto.InventoryItemRequestDTO;
-import com.axacrate.wms.dto.InventoryItemResponseDTO;
+import com.axacrate.wms.dto.*;
 import com.axacrate.wms.service.InventoryService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -92,4 +89,27 @@ public class InventoryController {
                 ApiResponse.success(item, "Inventory item details retrieved successfully")
         );
      }
+
+     @PutMapping("/{sku}") // PUT /api/inventory/sku/{sku} for updating inventory item details by SKU
+     public ResponseEntity<ApiResponse> updateItemBySku(@PathVariable String sku, @Valid @RequestBody InventoryUpdateRequestDTO requestDTO) {
+
+           InventoryUpdateRequestDTO updated = inventoryService.updateItemBySku(sku, requestDTO);
+
+            return ResponseEntity.ok(
+                    ApiResponse.success(updated, "Inventory item updated successfully")
+            );
+     }
+
+
+    @DeleteMapping("/{sku}") // DELETE /api/inventory/{sku} for deleting a specific inventory item by sku
+    public ResponseEntity<ApiResponse> deleteItemBySku(@PathVariable String sku) {
+
+        inventoryService.deleteItemBySku(sku);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Inventory item deleted successfully", null)
+        );
+    }
+
+
 }

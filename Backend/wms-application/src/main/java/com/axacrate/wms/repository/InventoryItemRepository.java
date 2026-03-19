@@ -99,4 +99,16 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
      */
     @Query("SELECT COUNT(i) FROM InventoryItem i WHERE i.currentZone.id = :zoneId")
     Long countItemsInZone(@Param("zoneId") UUID zoneId);
+
+    @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM InventoryItem i")
+    Long sumAllQuantities();
+
+    // Get low stock items
+    @Query("""
+        SELECT i
+        FROM InventoryItem i
+        WHERE i.quantity <= i.reorderThreshold
+        ORDER BY i.quantity ASC
+    """)
+    List<InventoryItem> findLowStockItems();
 }

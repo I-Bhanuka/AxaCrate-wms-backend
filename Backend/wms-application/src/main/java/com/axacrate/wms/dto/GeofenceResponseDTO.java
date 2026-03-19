@@ -1,7 +1,7 @@
 package com.axacrate.wms.dto;
 
-/**
- * GeoFence
+/*
+ * GeoFenceResponceDTO
  */
 
 import lombok.AllArgsConstructor;
@@ -13,12 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
-
 public class GeofenceResponseDTO {
     private boolean authorized;
     private String  statusMessage;
-    private String itemId;
-    private String serverTimestamp;
-
+    private String  itemId;
+    private String  dispatchOrderRef;
+    private String  serverTimestamp;
 }

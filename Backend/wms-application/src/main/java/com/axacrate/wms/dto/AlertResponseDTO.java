@@ -18,6 +18,8 @@ public class AlertResponseDTO {
     private String severity;
     private String alertStatus;
     private String message;
+    private UUID zoneId;
+    private String zoneName;
     private OffsetDateTime createdAt;
     private OffsetDateTime resolvedAt;
     private String resolvedByUsername;

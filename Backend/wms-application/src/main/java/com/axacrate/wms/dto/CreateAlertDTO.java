@@ -20,4 +20,7 @@ public class CreateAlertDTO {
 
     @NotBlank(message = "Message is required")
     private String message;
+
+    /** Optional — links this alert to a specific zone */
+    private java.util.UUID zoneId;
 }
