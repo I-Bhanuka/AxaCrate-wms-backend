@@ -1,5 +1,6 @@
 package com.axacrate.wms.service;
 
+import com.axacrate.wms.dto.UpdateUserRoleDTO;
 import com.axacrate.wms.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +83,45 @@ public class AdminUserService {
 
         return mapToUserResponse(user);
     }
+
+    // ── Update ────────────────────────────────────────────────────────────────
+
+    /**
+     * Updates a user's role.
+     *
+     * Safety rule: an admin cannot change their own role. This prevents the
+     * last admin from accidentally locking themselves out of the system.
+     * If you need to change an admin's role, another admin must do it.
+     */
+
+    @Transactional
+    public UserResponseDTO updateUserRole(
+            UUID targetUserId, UpdateUserRoleDTO dto, UUID requestingAdminId){
+
+        // Check if the same person is trying to change their own role
+        if (targetUserId.equals(requestingAdminId)) {
+            throw new IllegalArgumentException(
+                    "You cannot change your own role. Ask another admin to do this.");
+        }
+
+        // Find the target user to update
+        AppUser user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID [" + targetUserId + "] not found."));
+
+        Role newRole = parseRole(dto.getRole());
+        Role oldRole = user.getRole();
+
+        // Update the user's role
+        user.setRole(newRole);
+        userRepository.save(user);
+
+        log.info("Admin [{}] changed role of user [{}] from [{}] to [{}]",
+                requestingAdminId, user.getUsername(), oldRole, newRole);
+
+        return mapToUserResponse(user);
+    }
+
+
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
