@@ -13,6 +13,8 @@ import com.axacrate.wms.repository.AppUserRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 
 @Slf4j
 @Service
@@ -29,7 +31,6 @@ public class AdminUserService {
      * Creates a new user. Only callable by an ADMIN.
      * The role is set by the admin at creation time — users cannot choose their own role.
      */
-
     @Transactional
     public UserResponseDTO createUser(UserRegistrationDTO dto) {
         if (userRepository.existsByUsername(dto.getUsername())) {
@@ -51,6 +52,23 @@ public class AdminUserService {
         log.info("Admin created new user: {} with role: {}", saved.getUsername(), saved.getRole());
 
         return mapToUserResponse(saved);
+    }
+
+
+    // ── Read ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns all users in the system, sorted by role then username.
+     * Passwords are never included — UserResponseDTO contains safe fields only.
+     */
+    public List<UserResponseDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .sorted((a, b) -> {
+                    int roleCompare = a.getRole().name().compareTo(b.getRole().name());
+                    return roleCompare != 0 ? roleCompare : a.getUsername().compareTo(b.getUsername());
+                })
+                .map(this::mapToUserResponse)
+                .toList();
     }
 
 
