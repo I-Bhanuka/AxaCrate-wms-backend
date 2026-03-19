@@ -1,8 +1,10 @@
 package com.axacrate.wms.service;
 
+import com.axacrate.wms.dto.GeofenceResponseDTO;
 import com.axacrate.wms.dto.RfidReadRequestDTO;
 import com.axacrate.wms.dto.RfidWriteScanResponseDTO;
 import com.axacrate.wms.exception.ResourceNotFoundException;
+import com.axacrate.wms.service.GeofenceService;
 
 import com.axacrate.wms.entity.*;
 import com.axacrate.wms.repository.*;
@@ -24,6 +26,9 @@ public class RfidService {
     private final ZoneRepository zoneRepository;
     private final RfidHardwareRepository hardwareRepository;
     private final InventoryItemRepository inventoryItemRepository;
+    private final AlertRepository alertRepository;
+
+    private final GeofenceService geofenceService;
 
     Deque<RfidWriteScanResponseDTO> latestScans;
 
@@ -32,33 +37,34 @@ public class RfidService {
                        MovementLogRepository movementLogRepository,
                        ZoneRepository zoneRepository,
                        RfidHardwareRepository hardwareRepository,
-                       InventoryItemRepository inventoryItemRepository) {
+                       InventoryItemRepository inventoryItemRepository,
+                       AlertRepository alertRepository,
+                       GeofenceService geofenceService) {
         // Injecting repositories through constructor injection. Spring will automatically provide the implementations at runtime.
         this.rfidTagRepository = rfidTagRepository;
         this.movementLogRepository = movementLogRepository;
         this.zoneRepository = zoneRepository;
         this.hardwareRepository = hardwareRepository;
         this.inventoryItemRepository = inventoryItemRepository;
+        this.alertRepository = alertRepository;
 
         this.latestScans = new ConcurrentLinkedDeque<>();;
+        this.geofenceService = geofenceService;
     }
 
     public void handleRfidRead(RfidReadRequestDTO request) {
+        log.info("Read scan received from reader: {}, for tag: {}", request.getHardwareName(), request.getTagId());
 
-        // For testing, just log the data
-        System.out.println("RFID READ RECEIVED");
-        System.out.println("Tag ID: " + request.getTagId());
-        System.out.println("Reader ID: " + request.getReaderId());
-        System.out.println(" ");
+        // Validate hardware
+        RfidHardware hardware = hardwareCheck(request.getHardwareName(), null);
+        if (hardware == null) {
+            log.error("Hardware not found or not operational for reader: {}. Aborting.", request.getHardwareName());
+            return;
+        }
 
-        // Later on,
-        // - find reader
-        // - find tag
-        // - validate movement
-        // - log movement
-        // - raise alerts
-
-        log.info("Read scan received from reader: {}, for tag: {}", request.getReaderId(), request.getTagId());
+        // Find the destination zone (where the reader is)
+        Zone readerZone = zoneRepository.findByNameIgnoreCase(request.getZoneName()).
+                orElseThrow(() -> new ResourceNotFoundException("Reader zone not found"));
 
         // Find the tag
         RfidTag rfidTag = rfidTagRepository.findByUid(request.getTagId()).orElse(null);
@@ -66,15 +72,33 @@ public class RfidService {
         // Find the item
         InventoryItem item = rfidTag != null ? rfidTag.getInventoryItem() : null;
 
-        Zone readerZone = zoneRepository.findByNameIgnoreCase(request.getReaderId()).
-                orElseThrow(() -> new ResourceNotFoundException("Reader zone not found"));
 
         if (rfidTag == null) {
             log.warn("Tag not found for UID: {}. Read event ignored.", request.getTagId());
-            return; // Or you can choose to log this as an unregistered tag event
+            saveAlert(Alert.AlertType.UNKNOWN_TAG, Alert.Severity.CRITICAL,
+                    "Unknown tag detected: " + request.getTagId(), readerZone);
+
+            throw new ResourceNotFoundException("Tag not found for UID: " + request.getTagId());
         }
 
         log.info("Tag found: {}. Processing read event.", rfidTag.getUid());
+
+        // Capture the PREVIOUS zone BEFORE changing anything
+        Zone fromZone = rfidTag.getLastSeenZone();
+
+        GeofenceResponseDTO geofenceResponseDTO = geofenceService.processGeofenceEvent(
+                rfidTag,
+                hardware,
+                rfidTag.getLastSeenZone(),
+                readerZone
+        );
+
+        log.info(geofenceResponseDTO.toString());
+
+        if (!geofenceResponseDTO.isAuthorized()) {
+            log.warn("Movement denied for tag {}. Geofence violation detected. No updates made.", rfidTag.getUid());
+            return; // Stop processing if movement is denied
+        }
 
         // Change the tag's last seen location and time
         rfidTag.setLastSeenAt(LocalDateTime.now());
@@ -86,7 +110,7 @@ public class RfidService {
                 .tag(rfidTag)
                 .fromZone(item.getCurrentZone())
                 .toZone(readerZone)
-                .hardware(hardwareCheck(request.getReaderId()))
+                .hardware(hardwareCheck(request.getHardwareName(), null))
                 .eventType(MovementLog.EventType.MOVEMENT)
                 .synced(false)
                 .build();
@@ -103,19 +127,6 @@ public class RfidService {
         }
 
 
-
-
-
-
-        // TODO:
-        // This method can be separated for movement where it will,
-        // 1. Find RFID Tag
-        // 2. Update its last seen location based on reader
-        // 3. Log movement event
-        // 4. Check for geofencing violations
-        // 5. Raise alerts if necessary
-        // 6. Update inventory status if needed
-        // 7. Return success / failure
     }
 
     @Transactional
@@ -125,20 +136,20 @@ public class RfidService {
         //    b. If the tag is not registered. Register a new item. Then the response status "NEW_TAG" -> UI will show "New tag" then empty form
         //    c. If the tag is registered but not assigned to an inventory item. Then the response status "UNASSIGNED" -> UI will show the empty form
 
-        log.info("Write scan received from reader: {}, for tag: {}", request.getReaderId(), request.getTagId());
+        log.info("Write scan received from reader: {}, for tag: {}", request.getHardwareName(), request.getTagId());
 
         // Find the tag
         RfidTag rfidTag = rfidTagRepository.findByUid(request.getTagId()).orElse(null);
 
-        Zone writerZone = getWriterZone(request.getReaderId());
+        Zone writerZone = getWriterZone(request.getZoneName());
 
         // Create a new tag in DB if not there
         if (rfidTag == null) {
             log.info("New tag detected: {}. Creating...", request.getTagId());
-            rfidTag = rfidTagRepository.save(createTag(request.getTagId(), request.getReaderId()));
+            rfidTag = rfidTagRepository.save(createTag(request.getTagId(), request.getZoneName()));
             log.info("New tag created: {}", rfidTag.getUid());
             // Query the movement log
-            logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.TAG_REGISTERED);
+            logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.TAG_REGISTERED);
             log.info("Movement log logged a new tag registration!");
         } else {
 
@@ -146,12 +157,12 @@ public class RfidService {
             if (rfidTag.getInventoryItem() == null) {
                 // UNASSIGNED TAG
                 log.info("Unassigned tag scanned: {}. Logging unassigned event.", rfidTag.getUid());
-                logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.UNASSIGNED);
+                logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.UNASSIGNED);
                 log.info("Movement event logged for unassigned tag!");
             } else {
                 // ASSIGNED TAG
                 log.info("Assigned tag scanned: {}. Logging assigned event.", rfidTag.getUid());
-                logEvent(rfidTag, request.getReaderId(), writerZone, MovementLog.EventType.ASSIGNED);
+                logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.ASSIGNED);
                 log.info("Movement event logged for assigned tag!");
             }
         }
@@ -203,7 +214,7 @@ public class RfidService {
     }
 
     // HELPER: Check hardware availability and status
-    private RfidHardware hardwareCheck(String readerName) {
+    private RfidHardware hardwareCheck(String readerName, Zone zone) {
         // This method can be used for both read and write events
 
         // This method will:
@@ -216,7 +227,7 @@ public class RfidService {
 
         // Creating a new hardware if not found
         if (hardware == null) {
-            hardware = hardwareRepository.save(createHardware(readerName, RfidHardware.HardwareType.WRITER));
+            hardware = hardwareRepository.save(createHardware(readerName, RfidHardware.HardwareType.WRITER, null));
             log.info("New Hardware created! Name: {}", readerName);
         }
 
@@ -230,7 +241,7 @@ public class RfidService {
     }
 
     // HELPER: Create new hardware entry
-    private RfidHardware createHardware(String name, RfidHardware.HardwareType type) {
+    private RfidHardware createHardware(String name, RfidHardware.HardwareType type, Zone zone) {
         // This method will create a new writer hardware entry.
 
         return RfidHardware.builder().
@@ -238,7 +249,7 @@ public class RfidService {
                 name(name).
                 hardwareType(type).
                 hardwareStatus(RfidHardware.HardwareStatus.ACTIVE).
-                zoneLocation(null).
+                zoneLocation(zone).
                 build();
     }
 
@@ -250,7 +261,7 @@ public class RfidService {
                 tag(tag).
                 fromZone(null).
                 toZone(zone).
-                hardware(hardwareCheck(readerName)).
+                hardware(hardwareCheck(readerName, null)).
                 eventType(eventType).
                 synced(false).
                 build();
@@ -289,5 +300,20 @@ public class RfidService {
                     .currentZone(writerZone.getName())
                     .build();
         }
+    }
+
+    //
+    private void saveAlert(Alert.AlertType type, Alert.Severity severity,
+                           String message, Zone zone) {
+        alertRepository.save(Alert.builder()
+                .alertType(type)
+                .severity(severity)
+                .alertStatus(Alert.AlertStatus.PENDING)
+                .message(message)
+                .zone(zone)
+                .build());
+
+        log.info("Alert saved — type: {}, severity: {}, zone: {}",
+                type, severity, zone != null ? zone.getName() : "none");
     }
 }
