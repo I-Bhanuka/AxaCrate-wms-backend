@@ -121,6 +121,33 @@ public class AdminUserService {
         return mapToUserResponse(user);
     }
 
+    // ── Delete ────────────────────────────────────────────────────────────────
+
+    /**
+     * Permanently deletes a user.
+     *
+     * Same safety rule: an admin cannot delete themselves.
+     */
+
+    @Transactional
+    public void deleteUser(UUID targetUserId, UUID requestingAdminId) {
+
+        // Check if the same person is trying to delete themselves
+        if (targetUserId.equals(requestingAdminId)) {
+            throw new IllegalArgumentException(
+                    "You cannot delete your own account");
+        }
+
+        // Find the target user to delete
+        AppUser user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID [" + targetUserId + "] not found."));
+
+        // Delete the user from the DB
+        userRepository.delete(user);
+
+        log.info("Admin [{}] deleted user [{}] with role [{}]",
+                requestingAdminId, user.getUsername(), user.getRole());
+    }
 
 
     // ── Helpers ───────────────────────────────────────────────────────────────
