@@ -18,7 +18,10 @@ public class RfidReadRequestDTO {
     @NotBlank(message = "Tag UID is required")
     private String tagId;
 
-    @NotBlank(message = "Reader ID is required")
-    private String readerId;
+    @NotBlank(message = "Reader Name is required")
+    private String hardwareName;
 
+    @NotBlank(message = "Zone Name is required")
+    private String zoneName;
 }
+
