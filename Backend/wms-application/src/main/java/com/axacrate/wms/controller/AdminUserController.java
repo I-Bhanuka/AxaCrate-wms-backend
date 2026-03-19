@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/users") 
@@ -50,6 +52,20 @@ public class AdminUserController {
 
         return  ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(users, "Users list retrieved successfully"));
+    }
+
+    // ── GET /api/admin/users/{id} ─────────────────────────────────────────────
+    // Get a single user by ID.
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> getUserById(
+            @PathVariable UUID id) {
+
+        UserResponseDTO user = adminUserService.getUserById(id);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(user, "User retrieved successfully"));
     }
 
 }
