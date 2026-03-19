@@ -1,5 +1,6 @@
 package com.axacrate.wms.service;
 
+import com.axacrate.wms.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,7 @@ import com.axacrate.wms.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @Slf4j
@@ -71,6 +73,15 @@ public class AdminUserService {
                 .toList();
     }
 
+    /**
+     * Returns a single user by their UUID.
+     */
+    public UserResponseDTO getUserById(UUID id) {
+        AppUser user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID [" + id + "] not found."));
+
+        return mapToUserResponse(user);
+    }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
