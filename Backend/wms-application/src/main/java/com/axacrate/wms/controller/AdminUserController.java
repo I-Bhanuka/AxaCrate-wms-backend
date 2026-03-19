@@ -82,13 +82,31 @@ public class AdminUserController {
             @Valid @RequestBody UpdateUserRoleDTO dto,
             Authentication authentication) {
 
-        // Get the requesting admin's UUID from their JWT (via Authentication)
+        // Get the requesting admin from their JWT (via Authentication)
         AppUser requestingAdmin  = (AppUser) authentication.getPrincipal();
 
-        UserResponseDTO updatedUser = adminUserService.updateUserRole(id, dto, requestingAdmin .getId());
+        UserResponseDTO updatedUser = adminUserService.updateUserRole(id, dto, requestingAdmin.getId());
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(updatedUser, "User role updated successfully"));
+    }
+
+    // ── DELETE /api/admin/users/{id} ──────────────────────────────────────────
+    // Permanently delete a user. Admin cannot delete themselves.
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable UUID id,
+            Authentication authentication) {
+
+        // Get the requesting admin from their JWT (via Authentication)
+        AppUser requestingAdmin  = (AppUser) authentication.getPrincipal();
+
+        adminUserService.deleteUser(id, requestingAdmin.getId());
+
+        return  ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(null, "User deleted successfully"));
     }
 
 }
