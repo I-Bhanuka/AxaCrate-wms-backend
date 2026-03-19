@@ -15,6 +15,8 @@ import com.axacrate.wms.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/admin/users") 
 @RequiredArgsConstructor
@@ -36,4 +38,18 @@ public class AdminUserController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(createdUser, "User created successfully"));
     }
+
+    // ── GET /api/admin/users ──────────────────────────────────────────────────
+    // List all users. Only ADMIN can see the full user list.
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponseDTO>>> getAllUsers() {
+
+        List<UserResponseDTO> users = adminUserService.getAllUsers();
+
+        return  ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(users, "Users list retrieved successfully"));
+    }
+
 }
