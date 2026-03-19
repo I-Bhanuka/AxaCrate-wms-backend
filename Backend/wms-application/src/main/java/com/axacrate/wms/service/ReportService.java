@@ -5,7 +5,7 @@ import com.axacrate.wms.dto.DashboardReportRequestDTO;
 import com.axacrate.wms.dto.DashboardReportResponseDTO;
 import com.axacrate.wms.dto.LowStockItemDTO;
 import com.axacrate.wms.entity.InventoryItem;
-import com.axacrate.wms.repository.InventoryRepository;
+import com.axacrate.wms.repository.InventoryItemRepository;
 import com.axacrate.wms.repository.ZoneRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReportService {
 
-    private final InventoryRepository inventoryRepository;
+    private final InventoryItemRepository inventoryRepository;
     private final ZoneRepository zoneRepository;
     private final MovementLogService movementLogService;
 
