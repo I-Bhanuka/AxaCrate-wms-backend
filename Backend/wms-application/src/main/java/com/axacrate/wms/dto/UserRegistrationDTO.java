@@ -19,7 +19,7 @@ public class UserRegistrationDTO {
     private String lastName;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^[0-9]{10,15}$", message = "Invalid phone number")
+    @Pattern(regexp = "^[0-9]{10,15}$", message = "Invalid phone number") // Only digits, length between 10 and 15
     private String phoneNumber;
 
     @NotBlank(message = "Username is required")
