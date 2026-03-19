@@ -1,6 +1,8 @@
 package com.axacrate.wms.controller;
 
 import com.axacrate.wms.dto.ApiResponse;
+import com.axacrate.wms.dto.UpdateUserRoleDTO;
+import com.axacrate.wms.entity.AppUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -66,6 +68,27 @@ public class AdminUserController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(user, "User retrieved successfully"));
+    }
+
+    // ── PUT /api/admin/users/{id}/role ────────────────────────────────────────
+    // Change a user's role. Admin cannot change their own role.
+    // The requesting admin's UUID is taken from their JWT (via Authentication),
+    // not from the request body — so it can't be spoofed.
+
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> updateUserRole(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateUserRoleDTO dto,
+            Authentication authentication) {
+
+        // Get the requesting admin's UUID from their JWT (via Authentication)
+        AppUser requestingAdmin  = (AppUser) authentication.getPrincipal();
+
+        UserResponseDTO updatedUser = adminUserService.updateUserRole(id, dto, requestingAdmin .getId());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(updatedUser, "User role updated successfully"));
     }
 
 }
