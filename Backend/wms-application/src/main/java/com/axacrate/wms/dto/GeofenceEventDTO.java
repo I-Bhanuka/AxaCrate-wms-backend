@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -21,4 +22,12 @@ public class GeofenceEventDTO {
 
     @NotBlank(message = "Direction is required")
     private String direction; // "IN" or "OUT"
+
+    private String fromZone;
+
+    private String toZone;
+
+    private String readerName;
+
+    private LocalDateTime timestamp;
 }
