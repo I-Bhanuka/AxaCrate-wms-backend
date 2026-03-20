@@ -36,6 +36,20 @@ public class MovementLogService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<MovementLogResponseDTO> getRecentActivity(int limit) {
+        // Cap limit to prevent abuse
+        int safeLimit = Math.max(1, Math.min(limit, 100));
+
+        List<MovementLog> logs = movementLogRepository.findRecentActivity(PageRequest.of(0, safeLimit));
+
+        log.info("Activity logs retrieved: {}", logs.size());
+
+        return logs.stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
     private MovementLogResponseDTO mapToDTO(MovementLog log) {
         var tag = log.getTag();
         var item = tag != null ? tag.getInventoryItem() : null;
