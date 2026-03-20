@@ -143,13 +143,15 @@ public class RfidService {
 
         Zone writerZone = getWriterZone(request.getZoneName());
 
+        Zone onloadingZone = zoneRepository.findByZoneType(Zone.ZoneType.UNLOADING_ZONE).orElse(null);
+
         // Create a new tag in DB if not there
         if (rfidTag == null) {
             log.info("New tag detected: {}. Creating...", request.getTagId());
             rfidTag = rfidTagRepository.save(createTag(request.getTagId(), request.getZoneName()));
             log.info("New tag created: {}", rfidTag.getUid());
             // Query the movement log
-            logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.TAG_REGISTERED);
+            logEvent(rfidTag, request.getHardwareName(), onloadingZone, writerZone, MovementLog.EventType.TAG_REGISTERED);
             log.info("Movement log logged a new tag registration!");
         } else {
 
@@ -157,12 +159,12 @@ public class RfidService {
             if (rfidTag.getInventoryItem() == null) {
                 // UNASSIGNED TAG
                 log.info("Unassigned tag scanned: {}. Logging unassigned event.", rfidTag.getUid());
-                logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.UNASSIGNED);
+                logEvent(rfidTag, request.getHardwareName(), null, writerZone, MovementLog.EventType.UNASSIGNED);
                 log.info("Movement event logged for unassigned tag!");
             } else {
                 // ASSIGNED TAG
                 log.info("Assigned tag scanned: {}. Logging assigned event.", rfidTag.getUid());
-                logEvent(rfidTag, request.getHardwareName(), writerZone, MovementLog.EventType.ASSIGNED);
+                logEvent(rfidTag, request.getHardwareName(), null, writerZone, MovementLog.EventType.ASSIGNED);
                 log.info("Movement event logged for assigned tag!");
             }
         }
@@ -254,13 +256,13 @@ public class RfidService {
     }
 
     // HELPER: Log movement event
-    private void logEvent(RfidTag tag, String readerName, Zone zone, MovementLog.EventType eventType) {
+    private void logEvent(RfidTag tag, String readerName, Zone fromZone, Zone toZone, MovementLog.EventType eventType) {
         // This method will log the movement event into the MovementLog table
 
         MovementLog log = MovementLog.builder().
                 tag(tag).
-                fromZone(null).
-                toZone(zone).
+                fromZone(fromZone).
+                toZone(toZone).
                 hardware(hardwareCheck(readerName, null)).
                 eventType(eventType).
                 synced(false).
@@ -270,7 +272,7 @@ public class RfidService {
 
         // Update the last seen location and save the tag entity after logging the event
         tag.setLastSeenAt(LocalDateTime.now());
-        tag.setLastSeenZone(zone);
+        tag.setLastSeenZone(toZone);
         rfidTagRepository.save(tag);
     }
 
