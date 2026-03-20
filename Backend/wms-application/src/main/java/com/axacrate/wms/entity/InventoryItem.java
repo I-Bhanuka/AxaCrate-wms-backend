@@ -35,7 +35,7 @@ public class InventoryItem {
     @JoinColumn(name = "current_zone_id")
     private Zone currentZone;
 
-    @Column(name = "reorder_threshold", nullable = false)
+    @Column(name = "reorder_threshold")
     private Integer reorderThreshold;
 
     @OneToOne(mappedBy = "inventoryItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
