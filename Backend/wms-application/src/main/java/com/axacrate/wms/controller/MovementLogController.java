@@ -30,4 +30,18 @@ public class MovementLogController {
                 ApiResponse.success(movements, "Recent movements retrieved successfully")
         );
     }
+
+    @GetMapping("/activity")
+    public ResponseEntity<ApiResponse<List<MovementLogResponseDTO>>> getRecentActivity(
+            @RequestParam(defaultValue = "20") int limit) {
+        if (limit < 1) {
+            limit = 20;
+    }
+
+        List<MovementLogResponseDTO> movements = movementLogService.getRecentActivity(limit);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(movements, "Recent activity retrieved successfully")
+        );
+    }
 }

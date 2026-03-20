@@ -45,6 +45,21 @@ public interface MovementLogRepository extends JpaRepository<MovementLog, UUID> 
     """)
     List<MovementLog> findRecentMovements(@Param("eventType") MovementLog.EventType eventType,Pageable pageable);
 
+
+    // Fetch recent activity, newest first, with a limit
+    // Using JPQL to join fetch the lazy relations in one query (avoids N+1)
+    @Query("""
+        SELECT m FROM MovementLog m
+        LEFT JOIN FETCH m.tag t
+        LEFT JOIN FETCH t.inventoryItem i
+        LEFT JOIN FETCH m.fromZone
+        LEFT JOIN FETCH m.toZone
+        LEFT JOIN FETCH m.hardware
+        ORDER BY m.occurredAt DESC
+    """)
+    List<MovementLog> findRecentActivity(Pageable pageable);
+
+
     /**
      * Find all movements for a tag, ordered by most recent first
      * SQL: SELECT * FROM movement_log WHERE tag_id = ? ORDER BY occurred_at DESC
