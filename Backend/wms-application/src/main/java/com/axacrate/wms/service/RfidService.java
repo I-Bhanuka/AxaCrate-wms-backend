@@ -10,6 +10,7 @@ import com.axacrate.wms.entity.*;
 import com.axacrate.wms.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ public class RfidService {
 
     private final GeofenceService geofenceService;
 
-    Deque<RfidWriteScanResponseDTO> latestScans;
+    public Deque<RfidWriteScanResponseDTO> latestScans;
 
 
     public RfidService(RfidTagRepository rfidTagRepository,
@@ -317,5 +318,15 @@ public class RfidService {
 
         log.info("Alert saved — type: {}, severity: {}, zone: {}",
                 type, severity, zone != null ? zone.getName() : "none");
+    }
+
+
+    // Scheduled task to clear cached write scans every 60 seconds to prevent stale data and memory bloat
+    @Scheduled(fixedRate = 60000) // every 60 seconds
+    public void clearLatestScans() {
+        if (!latestScans.isEmpty()) {
+            log.info("Clearing {} cached write scans", latestScans.size());
+            latestScans.clear();
+        }
     }
 }
