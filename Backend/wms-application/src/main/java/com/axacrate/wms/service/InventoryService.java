@@ -34,12 +34,14 @@ public class InventoryService {
     private final InventoryItemRepository inventoryItemRepo;
     private final RfidTagRepository rfidTagRepository;
     private final ZoneRepository zoneRepository;
+    private final RfidService rfidService;
 
     @Autowired
-    public InventoryService(InventoryItemRepository inventoryItemRepo, RfidTagRepository rfidTagRepository, ZoneRepository zoneRepository) {
+    public InventoryService(InventoryItemRepository inventoryItemRepo, RfidTagRepository rfidTagRepository, ZoneRepository zoneRepository, RfidService rfidService) {
         this.inventoryItemRepo = inventoryItemRepo;
         this.rfidTagRepository = rfidTagRepository;
         this.zoneRepository = zoneRepository;
+        this.rfidService = rfidService;
     }
 
     @Transactional
@@ -78,8 +80,8 @@ public class InventoryService {
         // Save entity to database
         inventoryItemRepo.save(entity);
 
-        //TODO:
-        // later send data to item id to esp32 for rfid tag assignment
+        // Clear RFID cache to reflect new assignment immediately in UI
+        rfidService.clearLatestScans();
     }
 
     @Transactional(readOnly = true)
