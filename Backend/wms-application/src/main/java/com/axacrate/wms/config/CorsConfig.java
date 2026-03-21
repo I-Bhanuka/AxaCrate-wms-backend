@@ -41,7 +41,8 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",     // React development server
                 "http://localhost:8080",     // Backend
-                "http://192.168.*.*"         // ESP32 devices on local network
+                "http://192.168.*.*"  ,       // ESP32 devices on local network
+                "https://axacrate-wms-web.vercel.app"
         ));
 
         // Allow these HTTP methods
