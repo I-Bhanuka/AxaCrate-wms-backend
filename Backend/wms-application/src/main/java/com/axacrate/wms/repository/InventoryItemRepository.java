@@ -111,4 +111,23 @@ public interface InventoryItemRepository extends JpaRepository<InventoryItem, UU
         ORDER BY i.quantity ASC
     """)
     List<InventoryItem> findLowStockItems();
+
+    //--------------------------------------------------------------------------------------------------------------------------------
+    /**
+     * Count items grouped by zone
+     *
+     * SQL: SELECT z.name, COUNT(*) FROM inventory_item i JOIN zone z ON i.current_zone_id = z.id GROUP BY z.name ORDER BY COUNT(*) DESC
+     * @return Total quantity of items in each zone
+     */
+
+    @Query("""
+            SELECT z.name, COUNT(i)
+            FROM InventoryItem i 
+            JOIN i.currentZone z
+            GROUP BY z.name
+            ORDER BY COUNT(i) DESC
+            """)
+    List<Object[]> CountItemsByZone();
+
+
 }
