@@ -32,6 +32,8 @@ class InventoryServiceTest {
     @Mock InventoryItemRepository inventoryItemRepo;
     @Mock RfidTagRepository       rfidTagRepository;
     @Mock ZoneRepository          zoneRepository;
+    @Mock RfidService             rfidService;
+
 
     @InjectMocks InventoryService inventoryService;
 
