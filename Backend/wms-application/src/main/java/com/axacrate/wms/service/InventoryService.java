@@ -199,11 +199,10 @@ public class InventoryService {
         log.info("Total quantity in inventory: {}", totalQuantity);
 
         // Count low stock items (threshold = 5, adjust as needed)
-        int lowStockThreshold = 5;
+        int lowStockThreshold = 10;
         long lowStockCount = allItems.stream()
                 .filter(item -> item.getQuantity() < lowStockThreshold)
                 .count();
-        log.info("Low stock items count: {}", lowStockCount);
 
         // Group items by zone
         Map<String, Long> itemsByZone = allItems.stream()
