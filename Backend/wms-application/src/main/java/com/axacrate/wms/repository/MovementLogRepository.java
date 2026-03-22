@@ -134,4 +134,7 @@ public interface MovementLogRepository extends JpaRepository<MovementLog, UUID> 
     """)
     List<MovementLog> findByTagUid(@Param("uid") String uid);
 
+    @Query("SELECT COUNT(ml) FROM MovementLog ml WHERE ml.tag.id = :tagId AND ml.occurredAt > :since")
+    long countByTagIdSince(@Param("tagId") UUID tagId, @Param("since") OffsetDateTime since);
+
 }
