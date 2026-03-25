@@ -68,7 +68,7 @@ public class TagHealthService {
         return buildResponse(tag, readCount, alertRaised);
     }
 
-    // tot lldckdcdcz,── Get health status of all active tags ──────────────────────────────────
+    //── Get health status of all active tags ──────────────────────────────────
 
     public List<TagHealthResponseDTO> getAllTagHealthStatuses() {
         OffsetDateTime oneHourAgo = OffsetDateTime.now().minusHours(1);
