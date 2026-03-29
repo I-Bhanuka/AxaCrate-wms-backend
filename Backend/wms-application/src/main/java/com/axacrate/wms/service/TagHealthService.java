@@ -2,7 +2,6 @@ package com.axacrate.wms.service;
 
 import com.axacrate.wms.dto.ReplaceTagRequestDTO;
 import com.axacrate.wms.dto.TagHealthResponseDTO;
-import com.axacrate.wms.entity.Alert;
 import com.axacrate.wms.entity.AppUser;
 import com.axacrate.wms.entity.InventoryItem;
 import com.axacrate.wms.entity.RfidTag;
@@ -29,71 +28,67 @@ public class TagHealthService {
     private final MovementLogRepository movementLogRepository;
     private final AlertRepository       alertRepository;
 
-    // Hardcoded standard — minimum reads expected per hour
+    // Measurement window — how far back we look to count reads
     // TODO: make configurable later
-    private static final int MIN_READS_PER_HOUR = 1;
+    private static final long   WINDOW_SECONDS      = 60;   // look back 60 seconds
+
+    // Minimum acceptable read frequency
+    // TODO: make configurable later
+    private static final double MIN_READS_PER_SECOND = 0.1; // at least 1 read per 10 seconds
 
     // ── Called on every scan from RfidService ─────────────────────────────────
 
     @Transactional
     public TagHealthResponseDTO checkHealth(RfidTag tag) {
-        OffsetDateTime oneHourAgo = OffsetDateTime.now().minusHours(1);
-        long readCount = movementLogRepository.countByTagIdSince(tag.getId(), oneHourAgo);
+        OffsetDateTime windowStart = OffsetDateTime.now().minusSeconds(WINDOW_SECONDS);
+        long readCount = movementLogRepository.countByTagIdSince(tag.getId(), windowStart);
 
-        log.info("Tag {} | reads in last hour: {}", tag.getUid(), readCount);
+        double readsPerSecond = (double) readCount / WINDOW_SECONDS;
 
-        boolean isUnhealthy = readCount < MIN_READS_PER_HOUR;
+        log.info("Tag {} | reads in last {}s: {} ({} reads/sec)",
+                tag.getUid(), WINDOW_SECONDS, readCount, String.format("%.3f", readsPerSecond));
+
+        boolean isUnhealthy = readsPerSecond < MIN_READS_PER_SECOND;
         boolean alertRaised = false;
 
         if (isUnhealthy && tag.isActive()) {
-            log.warn("Tag {} is underperforming. reads={}, min={}", tag.getUid(), readCount, MIN_READS_PER_HOUR);
+            log.warn("Tag {} is underperforming. reads/sec={}, min={}",
+                    tag.getUid(), String.format("%.3f", readsPerSecond), MIN_READS_PER_SECOND);
 
             // Mark tag as INACTIVE
             tag.setStatus(RfidTag.RfidStatus.INACTIVE);
             rfidTagRepository.save(tag);
 
-            // Raise OFFLINE_READ alert
-            alertRepository.save(Alert.builder()
-                    .alertType(Alert.AlertType.OFFLINE_READ)
-                    .severity(Alert.Severity.MEDIUM)
-                    .alertStatus(Alert.AlertStatus.PENDING)
-                    .message("Tag [" + tag.getUid() + "] is underperforming. " +
-                            "reads=" + readCount + ", min=" + MIN_READS_PER_HOUR + "/hr. " +
-                            "Tag marked INACTIVE. Please assign a replacement tag.")
-                    .build());
-
             alertRaised = true;
         }
 
-        return buildResponse(tag, readCount, alertRaised);
+        return buildResponse(tag, readCount, readsPerSecond, alertRaised);
     }
 
-    // ── Get health status of all active tags ──────────────────────────────────
+    // ── Get health status of all tags ─────────────────────────────────────────
 
     public List<TagHealthResponseDTO> getAllTagHealthStatuses() {
-        OffsetDateTime oneHourAgo = OffsetDateTime.now().minusHours(1);
+        OffsetDateTime windowStart = OffsetDateTime.now().minusSeconds(WINDOW_SECONDS);
 
         return rfidTagRepository.findAll()
                 .stream()
                 .map(tag -> {
-                    long readCount = movementLogRepository.countByTagIdSince(tag.getId(), oneHourAgo);
-                    return buildResponse(tag, readCount, false);
+                    long readCount = movementLogRepository.countByTagIdSince(tag.getId(), windowStart);
+                    double readsPerSecond = (double) readCount / WINDOW_SECONDS;
+                    return buildResponse(tag, readCount, readsPerSecond, false);
                 })
                 .collect(Collectors.toList());
     }
 
     // ── Replace unhealthy tag — transfer inventory to new tag ─────────────────
-    // Staff resolves the issue by scanning a new healthy tag and transferring data
 
     @Transactional
     public TagHealthResponseDTO replaceTag(ReplaceTagRequestDTO request, AppUser resolvedBy) {
 
-        // Find unhealthy tag
         RfidTag unhealthyTag = rfidTagRepository.findByUid(request.getUnhealthyTagUid())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Tag not found: " + request.getUnhealthyTagUid()));
 
-        // Find new tag
         RfidTag newTag = rfidTagRepository.findByUid(request.getNewTagUid())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "New tag not found: " + request.getNewTagUid()));
@@ -113,24 +108,20 @@ public class TagHealthService {
         unhealthyTag.setStatus(RfidTag.RfidStatus.LOST);
         rfidTagRepository.save(unhealthyTag);
 
-        // Resolve the alert — save who resolved it
-        Alert alert = alertRepository.findById(UUID.fromString(request.getAlertId()))
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found: " + request.getAlertId()));
-        alert.resolve(resolvedBy);
-        alertRepository.save(alert);
-
         log.info("Tag replacement complete. Old={} New={} ResolvedBy={}",
                 unhealthyTag.getUid(), newTag.getUid(), resolvedBy.getUsername());
 
-        OffsetDateTime oneHourAgo = OffsetDateTime.now().minusHours(1);
-        long readCount = movementLogRepository.countByTagIdSince(newTag.getId(), oneHourAgo);
-        return buildResponse(newTag, readCount, false);
+        OffsetDateTime windowStart = OffsetDateTime.now().minusSeconds(WINDOW_SECONDS);
+        long readCount = movementLogRepository.countByTagIdSince(newTag.getId(), windowStart);
+        double readsPerSecond = (double) readCount / WINDOW_SECONDS;
+        return buildResponse(newTag, readCount, readsPerSecond, false);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
 
-    private TagHealthResponseDTO buildResponse(RfidTag tag, long readCount, boolean alertRaised) {
-        String healthStatus = (readCount >= MIN_READS_PER_HOUR && tag.isActive())
+    private TagHealthResponseDTO buildResponse(RfidTag tag, long readCount,
+                                               double readsPerSecond, boolean alertRaised) {
+        String healthStatus = (readsPerSecond >= MIN_READS_PER_SECOND && tag.isActive())
                 ? "HEALTHY" : "UNHEALTHY";
 
         InventoryItem item = tag.getInventoryItem();
@@ -140,8 +131,10 @@ public class TagHealthService {
                 .tagUid(tag.getUid())
                 .tagStatus(tag.getStatus().name())
                 .healthStatus(healthStatus)
-                .readsLastHour(readCount)
-                .minRequired(MIN_READS_PER_HOUR)
+                .readsInWindow(readCount)
+                .windowSeconds(WINDOW_SECONDS)
+                .readsPerSecond(Math.round(readsPerSecond * 1000.0) / 1000.0) // 3 decimal places
+                .minReadsPerSecond(MIN_READS_PER_SECOND)
                 .inventoryItemId(item != null ? item.getId().toString() : null)
                 .inventoryItemName(item != null ? item.getName() : null)
                 .lastSeenZone(tag.getLastSeenZone() != null ? tag.getLastSeenZone().getName() : null)

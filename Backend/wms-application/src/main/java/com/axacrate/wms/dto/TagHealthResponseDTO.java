@@ -15,10 +15,12 @@ import java.util.UUID;
 public class TagHealthResponseDTO {
     private UUID          tagId;
     private String        tagUid;
-    private String        tagStatus;        // ACTIVE, INACTIVE, LOST
-    private String        healthStatus;     // HEALTHY, UNHEALTHY
-    private long          readsLastHour;    // how many times scanned in last hour
-    private int           minRequired;      // hardcoded standard
+    private String        tagStatus;           // ACTIVE, INACTIVE, LOST
+    private String        healthStatus;        // HEALTHY, UNHEALTHY
+    private long          readsInWindow;       // how many reads in the measurement window
+    private long          windowSeconds;       // the measurement window in seconds
+    private double        readsPerSecond;      // calculated: readsInWindow / windowSeconds
+    private double        minReadsPerSecond;   // hardcoded minimum standard
     private String        inventoryItemId;
     private String        inventoryItemName;
     private String        lastSeenZone;
